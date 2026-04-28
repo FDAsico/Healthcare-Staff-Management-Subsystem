@@ -9,14 +9,21 @@ Please make sure that you have the following prerequisites:
 Ensure that the installation was successful and able to use the commands through terminal.
 
 ## Downloading the source code
- - Clone repository `https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem.git`
- - `cd Healthcare-Staff-Management-Subsystem`
+ Clone the repository:
+ ```shell
+ git clone https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem.git
+ cd Healthcare-Staff-Management-Subsystem
+ ```
  
 ### For frontend development use the following command:
- - `cd hsms`
- - `npm install`
- - `npm start`
+```shell
+cd hsms
+npm install
+npm start
+```
 
 ### For backend development use the following command:
- - `npm install`
- - `npm run server.js`
+```shell
+npm install
+npm run server.js
+```
