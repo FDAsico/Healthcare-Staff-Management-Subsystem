@@ -1,0 +1,27 @@
+{
+  "name": "healthcare-staff-management-subsystem",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem/issues"
+  },
+  "homepage": "https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.5.0"
+  }
+}
