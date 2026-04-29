@@ -14,16 +14,9 @@ Ensure that the installation was successful and able to use the commands through
  git clone https://github.com/FDAsico/Healthcare-Staff-Management-Subsystem.git
  cd Healthcare-Staff-Management-Subsystem
  ```
- 
-### For frontend development use the following command:
-```shell
-cd hsms
-npm install
-npm start
-```
 
 ### For backend development use the following command:
 ```shell
 npm install
-npm run server.js
+npm run dev
 ```
