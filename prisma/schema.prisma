@@ -1,36 +1,29 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// model User {
-//   user_id      String   @id @default(uuid())
-//   username     String   @unique
-//   email        String   @unique
-//   passwordHash String
-//   role         String // System role: ADMIN, STAFF, etc.
-//   isActive     Boolean  @default(true)
-//   createdAt    DateTime @default(now())
-//   updatedAt    DateTime @updatedAt
+model User {
+  user_id      String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  role         String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-//   staffProfile Staff?
-//   // auditLogs    AuditLog[] // Actions performed by this user/admin
-// }
+  staffProfile Staff?
+}
 
 model Department {
   department_id String   @id @default(uuid())
   name          String   @unique
   description   String?
-  location      String? // Building / Floor / Wing
+  location      String?
   contactEmail  String?
   contactPhone  String?
   isActive      Boolean  @default(true)
@@ -42,44 +35,42 @@ model Department {
 }
 
 model Staff {
-  staff_id String @id @default(uuid())
-  user_id  String @unique
-  // user     User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  staff_id       String   @id @default(uuid())
+  user_id        String   @unique
+  user           User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  firstName   String
-  lastName    String
-  middleName  String?
-  dateOfBirth DateTime?
-  gender      Gender?
-  email       String?
-  phone       String?
-  address     String?
+  employeeId     String   @unique
+  firstName      String
+  lastName       String
+  middleName     String?
+  dateOfBirth    DateTime?
+  gender         Gender?
+  email          String?
+  phone          String?
+  address        String?
 
-  role          StaffRole
-  department_id String?
-  department    Department? @relation(fields: [department_id], references: [department_id])
+  role           StaffRole
+  department_id  String?
+  department     Department? @relation(fields: [department_id], references: [department_id])
+
+  specialization String?
+  contactNo      String?
   status         StaffStatus @default(ACTIVE)
 
-  hiredAt      DateTime  @default(now())
-  terminatedAt DateTime?
-  updatedAt    DateTime  @updatedAt
+  hiredAt        DateTime    @default(now())
+  terminatedAt   DateTime?
+  updatedAt      DateTime    @updatedAt
 
-  // Scheduling & Attendance
-  schedules        Schedule[]
-  attendances      Attendance[]
-  availability     Availability?
-  shiftSwaps       ShiftSwapRequest[] @relation("RequestedSwaps")
-  shiftSwapTargets ShiftSwapRequest[] @relation("TargetSwaps")
+  schedules      Schedule[]
+  attendances    Attendance[]
+  availability   Availability?
+  leaveRequests  LeaveRequest[]
+  documents      StaffDocument[]
+  emergencyContacts EmergencyContact[]
 
-  // Patient & Clinical (PMS / Appointment / EMR integration)
-  assignments StaffPatientAssignment[]
-
-  // Event Bus / Notifications
-  notifications StaffNotification[]
-
-  // Audit
-  auditLogs         AuditLog[] // Actions where this staff is the target
-  leaveRequests     LeaveRequest[]
+  @@index([department_id])
+  @@index([status])
+  @@index([role])
 }
 
 enum Gender {
@@ -92,10 +83,12 @@ enum Gender {
 enum StaffRole {
   DOCTOR
   NURSE
+  RECEPTIONIST
   PHARMACIST
   BILLING_OFFICER
   SUPPORT_AGENT
   ADMIN
+  LAB_TECHNICIAN
   SURGEON
   SPECIALIST
 }
@@ -109,30 +102,32 @@ enum StaffStatus {
 }
 
 model Schedule {
-  schedule_id String @id @default(uuid())
-  staff_id    String
-  staff       Staff  @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  schedule_id   String         @id @default(uuid())
+  staff_id      String
+  staff         Staff          @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
 
   department_id String?
-  department    Department? @relation(fields: [department_id], references: [department_id])
+  department    Department?    @relation(fields: [department_id], references: [department_id])
 
-  shiftDate DateTime
-  startTime DateTime
-  endTime   DateTime
-  shiftType ShiftType      @default(REGULAR)
-  status    ScheduleStatus @default(SCHEDULED)
-  notes     String?
-  createdBy String? // user_id of the admin who scheduled
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  shiftDate     DateTime
+  startTime     DateTime
+  endTime       DateTime
+  shiftType     ShiftType      @default(REGULAR)
+  status        ScheduleStatus @default(SCHEDULED)
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  attendances  Attendance[]
-  swapRequests ShiftSwapRequest[]
+  attendances   Attendance[]
+
+  @@index([staff_id])
+  @@index([shiftDate])
 }
 
 enum ShiftType {
   REGULAR
   OVERTIME
+  ON_CALL
   HOLIDAY
   NIGHT_SHIFT
   WEEKEND
@@ -146,47 +141,22 @@ enum ScheduleStatus {
   NO_SHOW
 }
 
-
-model ShiftSwapRequest {
-  swap_id      String @id @default(uuid())
-  requester_id String
-  requester    Staff  @relation("RequestedSwaps", fields: [requester_id], references: [staff_id], onDelete: Cascade)
-  target_id    String
-  target       Staff  @relation("TargetSwaps", fields: [target_id], references: [staff_id], onDelete: Cascade)
-
-  schedule_id String
-  schedule    Schedule @relation(fields: [schedule_id], references: [schedule_id], onDelete: Cascade)
-
-  proposedShiftDate DateTime?
-  reason            String?
-  status            SwapStatus @default(PENDING)
-  approvedBy        String? // user_id
-  approvedAt        DateTime?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-}
-
-enum SwapStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
 model Attendance {
-  attendance_id String    @id @default(uuid())
+  attendance_id String           @id @default(uuid())
   staff_id      String
-  staff         Staff     @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  staff         Staff            @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
   schedule_id   String?
-  schedule      Schedule? @relation(fields: [schedule_id], references: [schedule_id], onDelete: SetNull)
+  schedule      Schedule?        @relation(fields: [schedule_id], references: [schedule_id], onDelete: SetNull)
 
-  date       DateTime
-  timeIn     DateTime?
-  timeOut    DateTime?
-  status     AttendanceStatus
-  remarks    String?
-  verifiedBy String? // user_id
-  createdAt  DateTime         @default(now())
+  date          DateTime
+  timeIn        DateTime?
+  timeOut       DateTime?
+  status        AttendanceStatus
+  remarks       String?
+  createdAt     DateTime         @default(now())
+
+  @@index([staff_id])
+  @@index([date])
 }
 
 enum AttendanceStatus {
@@ -199,32 +169,35 @@ enum AttendanceStatus {
 }
 
 model Availability {
-  availability_id String @id @default(uuid())
-  staff_id        String @unique
-  staff           Staff  @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  availability_id String   @id @default(uuid())
+  staff_id        String   @unique
+  staff           Staff    @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
 
-  isAvailable    Boolean   @default(true)
-  reason         String?
-  availableFrom  DateTime?
-  availableUntil DateTime?
-  updatedAt      DateTime  @updatedAt
+  isAvailable     Boolean  @default(true)
+  reason          String?
+  availableFrom   DateTime?
+  availableUntil  DateTime?
+  updatedAt       DateTime @updatedAt
 }
 
 model LeaveRequest {
-  leave_id String @id @default(uuid())
-  staff_id String
-  staff    Staff  @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  leave_id    String        @id @default(uuid())
+  staff_id    String
+  staff       Staff         @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
 
-  leaveType  LeaveType
-  startDate  DateTime
-  endDate    DateTime
-  totalDays  Float
-  reason     String?
-  status     LeaveStatus @default(PENDING)
-  reviewedBy String? // staff_id of the approver
-  reviewedAt DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  totalDays   Float
+  reason      String?
+  status      LeaveStatus   @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([staff_id])
+  @@index([status])
 }
 
 enum LeaveType {
@@ -246,69 +219,56 @@ enum LeaveStatus {
   CANCELLED
 }
 
-model StaffPatientAssignment {
-  assignment_id String @id @default(uuid())
+model StaffDocument {
+  document_id   String       @id @default(uuid())
   staff_id      String
-  staff         Staff  @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  staff         Staff        @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
 
-  patient_id      String // Loose ref: Patient Management Subsystem
-  appointment_id  String? // Loose ref: Appointment Subsystem
-  appointmentTime DateTime
-  notes           String?
-  status          AssignmentStatus @default(ACTIVE)
-  createdAt       DateTime         @default(now())
-  completedAt     DateTime?
+  documentType  DocumentType
+  title         String
+  fileUrl       String?
+  issuedBy      String?
+  issueDate     DateTime?
+  expiryDate    DateTime?
+  isVerified    Boolean      @default(false)
+  verifiedBy    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
-enum AssignmentStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  TRANSFERRED
+enum DocumentType {
+  MEDICAL_LICENSE
+  BOARD_CERTIFICATION
+  DEGREE
+  TRAINING_CERTIFICATE
+  BACKGROUND_CHECK
+  ID_PROOF
+  CONTRACT
+  INSURANCE
+  VACCINATION_RECORD
 }
 
-model StaffNotification {
-  notification_id String @id @default(uuid())
-  staff_id        String
-  staff           Staff  @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+model EmergencyContact {
+  contact_id    String   @id @default(uuid())
+  staff_id      String
+  staff         Staff    @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
 
-  type            NotificationType
-  title           String
-  message         String
-  data            Json? // Flexible payload from other subsystems
-  isRead          Boolean          @default(false)
-  readAt          DateTime?
-  sourceSubsystem String? // e.g., "BILLING", "APPOINTMENT", "INVENTORY"
-  sourceEntityId  String? // ID of the triggering entity in the source subsystem
-  createdAt       DateTime         @default(now())
-}
-
-enum NotificationType {
-  SCHEDULE_CHANGE
-  SHIFT_SWAP
-  LEAVE_APPROVAL
-  PAYROLL_PROCESSED
-  PATIENT_ASSIGNMENT
-  SYSTEM_ALERT
-  TRAINING_DUE
-  DOCUMENT_EXPIRY
-  INVENTORY_LOW
-  SUPPORT_TICKET
+  name          String
+  relationship  String
+  phone         String
+  email         String?
+  address       String?
+  isPrimary     Boolean  @default(false)
 }
 
 model AuditLog {
-  log_id      String  @id @default(uuid())
-  performedBy String? // user_id — who did the action
-  // user        User?   @relation(fields: [performedBy], references: [user_id], onDelete: SetNull)
-
-  targetStaffId String? // If the action targeted a specific staff member
-  staff         Staff?  @relation(fields: [targetStaffId], references: [staff_id], onDelete: SetNull)
-
-  action      String // e.g. "APPROVE_LEAVE", "UPDATE_SCHEDULE", "CREATE_PAYROLL"
-  entity      String // e.g. "Staff", "LeaveRequest", "PayrollRecord"
-  entityId    String?
-  oldValue    Json?
-  newValue    Json?
-  ipAddress   String?
-  performedAt DateTime @default(now())
+  log_id        String   @id @default(uuid())
+  performedBy   String?
+  action        String
+  entity        String
+  entityId      String?
+  oldValue      Json?
+  newValue      Json?
+  ipAddress     String?
+  performedAt   DateTime @default(now())
 }
