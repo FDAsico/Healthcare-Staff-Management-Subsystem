@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import Login from './pages/login';
-import './App.css';
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import Dashboard from './pages/Dashboard'
+import Patients from './pages/Patients'
+import Appointment from './pages/Appointment'
+import CalendarView from './pages/CalendarView'
+import MedicalRecord from './pages/MedicalRecord'
 
-function App() {
+const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState('');
 
@@ -21,19 +25,20 @@ function App() {
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
-
+  
   return (
-    <div className="p-10 text-center">
-      <h1 className="text-2xl font-bold">Welcome to Smart Health Care Dashboard</h1>
-      <p className="mt-4">You are now logged in as {userRole}!</p>
-      <button 
-        onClick={handleLogout}
-        className="mt-6 px-6 py-3 bg-black text-white rounded-lg hover:bg-[#333]"
-      >
-        Logout
-      </button>
+    <div>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/patients" element={<Patients />} />
+        <Route path="/appointments" element={<Appointment />} />
+        <Route path="/appointments/all" element={<Appointment />} />
+        <Route path="/appointments/calendar" element={<CalendarView />} />
+        <Route path="/record" element={<MedicalRecord />} />
+
+      </Routes>
     </div>
-  );
+  )
 }
 
 export default App;
