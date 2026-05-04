@@ -23,7 +23,7 @@ const menuItems = [
     ],
   },
   { name: "Medical Records", icon: FileText, path: "/record" },
-  { name: "Staff", icon: UserCog, path: "/staff" },
+
 ];
 
 const Sidebar = () => {

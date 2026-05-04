@@ -5,7 +5,7 @@ import Patients from './pages/Patients'
 import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
 import MedicalRecord from './pages/MedicalRecord'
-import Staff from './pages/Staff'
+
 
 
 const App = () => {
@@ -18,7 +18,7 @@ const App = () => {
         <Route path="/appointments/all" element={<Appointment />} />
         <Route path="/appointments/calendar" element={<CalendarView />} />
         <Route path="/record" element={<MedicalRecord />} />
-        <Route path="/staff" element={<Staff />} />
+
       </Routes>
     </div>
   )
