@@ -38,7 +38,7 @@ steps:
       - '--set-secrets'
       - 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,FRONTEND_URL=frontend-url:latest'
       - '--set-env-vars'
-      - 'NODE_ENV=production,PORT=8080'
+      - 'NODE_ENV=production'
       - '--service-account'
       - 'healthcare-staff-api-sa@$PROJECT_ID.iam.gserviceaccount.com'
 
