@@ -6,9 +6,26 @@ import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
 import MedicalRecord from './pages/MedicalRecord'
 
-
-
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState('');
+
+  const handleLogin = (userData) => {
+    setIsAuthenticated(true);
+    setUserRole(localStorage.getItem('userRole') || 'Doctor');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    setIsAuthenticated(false);
+    setUserRole('');
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+  
   return (
     <div>
       <Routes>
@@ -24,4 +41,4 @@ const App = () => {
   )
 }
 
-export default App
+export default App;
