@@ -18,5 +18,6 @@ Ensure that the installation was successful and able to use the commands through
 ### For backend development use the following command:
 ```shell
 npm install
+npx prisma generate
 npm run dev
 ```
