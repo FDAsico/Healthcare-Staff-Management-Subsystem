@@ -4,7 +4,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 export function validateUUID(paramName: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const value = req.params[paramName];
+    const value = req.params[paramName] as string;
     if (!value || !UUID_REGEX.test(value)) {
       return res.status(400).json({ message: `Invalid ${paramName} format` });
     }
