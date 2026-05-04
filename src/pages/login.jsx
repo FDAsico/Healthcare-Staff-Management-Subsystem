@@ -150,6 +150,7 @@ const Login = ({ onLogin }) => {
                   <option value="Nurse">Nurse</option>
                   <option value="Staff">Staff</option>
                   <option value="Pharmacist">Pharmacist</option>
+                  <option value="Admin">Admin</option>
                 </select>
                 <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
