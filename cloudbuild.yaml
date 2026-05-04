@@ -40,7 +40,7 @@ steps:
       - '--set-env-vars'
       - 'NODE_ENV=production,PORT=8080'
       - '--service-account'
-      - 'staff-api-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      - 'healthcare-staff-api-sa@$PROJECT_ID.iam.gserviceaccount.com'
 
 options:
   logging: CLOUD_LOGGING_ONLY
