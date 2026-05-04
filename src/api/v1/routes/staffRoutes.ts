@@ -1,21 +1,30 @@
 import { Router } from "express";
 import * as controller from "../controllers/staffControllers.js";
+import {
+  validateCreateStaff,
+  validateUpdateStaff,
+  validateCreateSchedule,
+  validateRecordAttendance,
+  validateCreateLeave,
+  validateReviewLeave,
+} from "../validators/staffValidator.js";
+import { validateUUID } from "../validators/commonValidator.js";
 
 const router = Router();
 
 router.get("/", controller.getAll);
-router.get("/:id", controller.getById);
+router.get("/:id", validateUUID("id"), controller.getById);
 router.post("/", controller.create);
-router.put("/:id", controller.update);
-router.delete("/:id", controller.remove);
+router.put("/:id", validateUUID("id"), controller.update);
+router.delete("/:id", validateUUID("id"), validateUpdateStaff, controller.remove);
 
-router.get("/:id/schedules", controller.getSchedules);
-router.post("/:id/schedules", controller.createSchedule);
+router.get("/:id/schedules", validateUUID("id"), controller.getSchedules);
+router.post("/:id/schedules", validateUUID("id"), controller.createSchedule);
 
-router.get("/:id/attendance", controller.getAttendance);
-router.post("/attendance", controller.recordAttendance);
+router.get("/:id/attendance", validateUUID("id"), controller.getAttendance);
+router.post("/attendance", validateRecordAttendance, controller.recordAttendance);
 
-router.get("/:id/leaves", controller.getLeaves);
-router.post("/:id/leaves", controller.createLeave);
+router.get("/:id/leaves", validateUUID("id"), controller.getLeaves);
+router.post("/:id/leaves", validateUUID("id"), controller.createLeave);
 
 export default router;
