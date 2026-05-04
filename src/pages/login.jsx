@@ -2,9 +2,8 @@ import { useState } from 'react';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
-    role: '',
   });
   
   const [errors, setErrors] = useState({});
@@ -14,20 +13,16 @@ const Login = ({ onLogin }) => {
   const validate = () => {
     const newErrors = {};
     
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
     }
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    if (!formData.role) {
-      newErrors.role = 'Please select a role';
     }
     
     setErrors(newErrors);
@@ -51,9 +46,8 @@ const Login = ({ onLogin }) => {
     // MOCK LOGIN
     setTimeout(() => {
       localStorage.setItem('token', 'mock-token-123');
-      localStorage.setItem('userRole', formData.role);
       setIsLoading(false);
-      onLogin?.({ email: formData.email, role: formData.role });
+      onLogin?.({ username: formData.username });
     }, 1000);
   };
 
@@ -79,24 +73,24 @@ const Login = ({ onLogin }) => {
           </p>
           
           <form onSubmit={handleSubmit} className="w-full" noValidate>
-            {/* Email */}
+            {/* Username */}
             <div className="mb-6 sm:mb-8">
-              <label htmlFor="email" className="block text-base sm:text-lg font-semibold text-[#1a1a1a] mb-2 sm:mb-3">
-                Email
+              <label htmlFor="username" className="block text-base sm:text-lg font-semibold text-[#1a1a1a] mb-2 sm:mb-3">
+                Username
               </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Enter your username"
                 className={`w-full px-5 py-4 sm:px-6 sm:py-5 border-2 rounded-xl text-base sm:text-lg bg-white text-[#1a1a1a] font-[Inter,sans-serif] transition-all duration-200 focus:outline-none focus:border-black focus:ring-4 focus:ring-black/5 ${
-                  errors.email ? 'border-red-500' : 'border-[#e0e0e0]'
+                  errors.username ? 'border-red-500' : 'border-[#e0e0e0]'
                 }`}
               />
-              {errors.email && (
-                <span className="block text-sm text-red-500 mt-2">{errors.email}</span>
+              {errors.username && (
+                <span className="block text-sm text-red-500 mt-2">{errors.username}</span>
               )}
             </div>
 
@@ -127,39 +121,6 @@ const Login = ({ onLogin }) => {
               </div>
               {errors.password && (
                 <span className="block text-sm text-red-500 mt-2">{errors.password}</span>
-              )}
-            </div>
-
-            {/* Role */}
-            <div className="mb-6 sm:mb-8">
-              <label htmlFor="role" className="block text-base sm:text-lg font-semibold text-[#1a1a1a] mb-2 sm:mb-3">
-                Role
-              </label>
-              <div className="relative">
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className={`w-full px-5 py-4 sm:px-6 sm:py-5 border-2 rounded-xl text-base sm:text-lg bg-white text-[#1a1a1a] font-[Inter,sans-serif] appearance-none cursor-pointer transition-all duration-200 focus:outline-none focus:border-black focus:ring-4 focus:ring-black/5 pr-14 ${
-                    errors.role ? 'border-red-500' : 'border-[#e0e0e0]'
-                  } ${!formData.role ? 'text-[#aaa]' : ''}`}
-                >
-                  <option value="" disabled>Select Role</option>
-                  <option value="Doctor">Doctor</option>
-                  <option value="Nurse">Nurse</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Pharmacist">Pharmacist</option>
-                  <option value="Admin">Admin</option>
-                </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 8L1 3h10z" fill="#666"/>
-                  </svg>
-                </div>
-              </div>
-              {errors.role && (
-                <span className="block text-sm text-red-500 mt-2">{errors.role}</span>
               )}
             </div>
 
