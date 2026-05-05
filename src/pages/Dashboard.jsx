@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
-import ScheduleAppointment from "../components/ScheduleAppoinment";
 
 import {
   Users,
@@ -16,9 +15,7 @@ const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
 
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem("sidebar-collapsed") === "true"
-  );
+  const [collapsed, setCollapsed] = useState(false);
 
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
   const [activities, setActivities] = useState([]);
@@ -42,121 +39,16 @@ const Dashboard = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const syncData = () => {
-      const savedAppointments =
-        JSON.parse(localStorage.getItem("appointments")) || [];
-      const savedPatients =
-        JSON.parse(localStorage.getItem("patients")) || [];
-
-      setPatients(savedPatients);
-
-      const updatedAppointments = savedAppointments.map((a) => ({
-        ...a,
-        createdAt: a.createdAt || Date.now(),
-      }));
-
-      setAppointments(updatedAppointments);
-
-      const formattedActivities = updatedAppointments.slice(0, 5).map((a) => ({
-        type: a.status || "pending",
-        text: `Appointment ${a.status || "Pending"}`,
-        name: a.patient,
-        time: a.time,
-      }));
-
-      setActivities(formattedActivities);
-    };
-
-    syncData();
-
-    window.addEventListener("storage", syncData);
-    window.addEventListener("appointments-updated", syncData);
-    window.addEventListener("patients-updated", syncData);
-
-    return () => {
-      window.removeEventListener("storage", syncData);
-      window.removeEventListener("appointments-updated", syncData);
-      window.removeEventListener("patients-updated", syncData);
-    };
-  }, []);
-
-  const handleSaveAppointment = (newAppointment) => {
-    const appointmentWithTime = {
-      ...newAppointment,
-      createdAt: Date.now(),
-    };
-
-    const updated = [appointmentWithTime, ...appointments];
-    setAppointments(updated);
-    localStorage.setItem("appointments", JSON.stringify(updated));
-    window.dispatchEvent(new Event("appointments-updated"));
-  };
-
-  const getCleanPatientName = (patientName) => {
-    const trimmed = (patientName || "").trim();
-    const parts = trimmed.split(/\s+/);
-    return {
-      firstName: parts[0] || "",
-      lastName: parts.slice(1).join(" ") || "",
-      fullName: trimmed.toLowerCase(),
-    };
-  };
-
-  const updatePatientAfterAppointmentConfirmation = (appointment) => {
-    const savedPatients = JSON.parse(localStorage.getItem("patients")) || [];
-    if (!savedPatients.length) return;
-
-    const appointmentName = getCleanPatientName(appointment.patient).fullName;
-
-    const updatedPatients = savedPatients.map((p) => {
-      const patientFullName = `${p.firstName || ""} ${p.lastName || ""}`
-        .trim()
-        .toLowerCase();
-
-      if (!patientFullName || patientFullName !== appointmentName) return p;
-
-      return {
-        ...p,
-        lastVisit: appointment.date || new Date().toISOString().split("T")[0],
-        condition: appointment.reason || p.condition || "Follow-up",
-      };
-    });
-
-    const hasChanges =
-      JSON.stringify(updatedPatients) !== JSON.stringify(savedPatients);
-
-    if (hasChanges) {
-      localStorage.setItem("patients", JSON.stringify(updatedPatients));
-      window.dispatchEvent(
-        new CustomEvent("patients-updated", { detail: { source: "dashboard" } })
-      );
-    }
-  };
-
   const updateStatus = (id, status) => {
     const updated = appointments.map((a) =>
       a.id === id ? { ...a, status } : a
     );
-
     setAppointments(updated);
-    localStorage.setItem("appointments", JSON.stringify(updated));
-
-    if (status === "Confirmed") {
-      const confirmedAppointment = updated.find((a) => a.id === id);
-      if (confirmedAppointment) {
-        updatePatientAfterAppointmentConfirmation(confirmedAppointment);
-      }
-    }
-
-    window.dispatchEvent(new Event("appointments-updated"));
   };
 
   const handleDeleteAppointment = (id) => {
     const updated = appointments.filter((a) => a.id !== id);
     setAppointments(updated);
-    localStorage.setItem("appointments", JSON.stringify(updated));
-    window.dispatchEvent(new Event("appointments-updated"));
   };
 
   const todayAppointments = getLast24HoursAppointments(appointments);
@@ -184,7 +76,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-6 mb-6">
-          <div className="col-span-2 bg-white p-5 rounded-xl shadow-sm flex flex-col h-[480px]">
+          <div className="col-span-2 bg-white p-5 rounded-xl shadow-sm flex flex-col h-170">
             <h2 className="text-lg font-semibold mb-4">Today's Appointments</h2>
 
             <p className="text-sm text-gray-500 mb-3">
@@ -275,8 +167,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        <ScheduleAppointment onSave={handleSaveAppointment} />
       </div>
 
       {showAppointmentsModal && (
