@@ -53,7 +53,7 @@ steps:
       - '--min-instances'
       - '0'
       - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest'
+      - 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,SUBSYSTEM_API_KEY=subsystem_api_key:latest'
       - '--set-env-vars'
       - 'NODE_ENV=production'
       - '--service-account'
