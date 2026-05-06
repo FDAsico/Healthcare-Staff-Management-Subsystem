@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 const VALID_ROLES = [
-  "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST",
-  "BILLING_OFFICER", "SUPPORT_AGENT", "ADMIN",
-  "LAB_TECHNICIAN", "SURGEON", "SPECIALIST",
+  "DOCTOR", "NURSE", "PHARMACIST","ADMIN",
 ];
 
 const VALID_STATUSES = ["ACTIVE", "ON_LEAVE", "SUSPENDED", "RESIGNED", "TERMINATED"];
