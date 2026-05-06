@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as jwt.SignOptions["expiresIn"];
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
@@ -20,7 +20,7 @@ export function generateAccessToken(userId: string, role: string): string {
 
 export function generateRefreshToken(userId: string): string {
   return jwt.sign({ userId, type: "refresh" }, JWT_SECRET, {
-    expiresIn: "30d",
+    expiresIn: "30d" as jwt.SignOptions["expiresIn"],
   });
 }
 
