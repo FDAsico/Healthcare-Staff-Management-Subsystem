@@ -7,16 +7,29 @@ datasource db {
 }
 
 model User {
-  user_id      String   @id @default(uuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String
-  role         String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  user_id       String   @id @default(uuid())
+  username      String   @unique
+  email         String   @unique
+  passwordHash  String
+  role          String
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   staffProfile Staff?
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  token_id   String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([user_id])
 }
 
 model Department {
@@ -52,9 +65,6 @@ model Staff {
   role           StaffRole
   department_id  String?
   department     Department? @relation(fields: [department_id], references: [department_id])
-
-  specialization String?
-  contactNo      String?
   status         StaffStatus @default(ACTIVE)
 
   hiredAt        DateTime    @default(now())
@@ -83,14 +93,8 @@ enum Gender {
 enum StaffRole {
   DOCTOR
   NURSE
-  RECEPTIONIST
   PHARMACIST
-  BILLING_OFFICER
-  SUPPORT_AGENT
   ADMIN
-  LAB_TECHNICIAN
-  SURGEON
-  SPECIALIST
 }
 
 enum StaffStatus {
