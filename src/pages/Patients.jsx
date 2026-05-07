@@ -117,7 +117,7 @@ const Patients = () => {
         className="flex-1 p-6 transition-all duration-300 flex flex-col"
         style={{ marginLeft: collapsed ? "85px" : "265px" }}
       >
-        <h1 className="text-3xl font-bold mb-6">Patients</h1>
+        <h1 className="text-[24px] font-bold mb-6">Patients</h1>
 
         <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex items-center gap-4">
           <div className="flex-1 relative flex items-center">

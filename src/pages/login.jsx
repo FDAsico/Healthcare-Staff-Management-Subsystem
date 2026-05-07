@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ onLogin }) => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -9,6 +12,13 @@ const Login = ({ onLogin }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   const validate = () => {
     const newErrors = {};
@@ -43,17 +53,16 @@ const Login = ({ onLogin }) => {
     
     setIsLoading(true);
     
-    // MOCK LOGIN
     setTimeout(() => {
       localStorage.setItem('token', 'mock-token-123');
       setIsLoading(false);
       onLogin?.({ username: formData.username });
+      navigate('/');
     }, 1000);
   };
 
   return (
     <div className="flex min-h-screen w-full font-[Inter,sans-serif] overflow-hidden">
-      {/* LEFT SIDE - IMAGE */}
       <div className="flex-1 min-h-screen overflow-hidden bg-black hidden lg:flex">
         <img 
           src="/images/healthcare-team.png"
@@ -62,7 +71,6 @@ const Login = ({ onLogin }) => {
         />
       </div>
       
-      {/* RIGHT SIDE - FORM */}
       <div className="flex-1 flex items-center justify-center min-h-screen bg-white p-6 sm:p-10 lg:p-0">
         <div className="w-full max-w-xl lg:max-w-md xl:max-w-lg text-left">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-[#1a1a1a] mb-2 tracking-tight leading-tight">
@@ -73,7 +81,6 @@ const Login = ({ onLogin }) => {
           </p>
           
           <form onSubmit={handleSubmit} className="w-full" noValidate>
-            {/* Username */}
             <div className="mb-6 sm:mb-8">
               <label htmlFor="username" className="block text-base sm:text-lg font-semibold text-[#1a1a1a] mb-2 sm:mb-3">
                 Username
@@ -94,7 +101,6 @@ const Login = ({ onLogin }) => {
               )}
             </div>
 
-            {/* Password */}
             <div className="mb-6 sm:mb-8">
               <label htmlFor="password" className="block text-base sm:text-lg font-semibold text-[#1a1a1a] mb-2 sm:mb-3">
                 Password
@@ -124,14 +130,12 @@ const Login = ({ onLogin }) => {
               )}
             </div>
 
-            {/* Error Banner */}
             {errors.submit && (
               <div className="bg-[#f8d7da] text-[#721c24] px-5 py-4 rounded-xl mb-6 text-base">
                 {errors.submit}
               </div>
             )}
 
-            {/* Login Button */}
             <button 
               type="submit" 
               disabled={isLoading}
@@ -140,7 +144,6 @@ const Login = ({ onLogin }) => {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
 
-            {/* Register Link */}
             <p className="text-center mt-8 text-base text-[#666]">
               Don't have an account?{' '}
               <a href="/register" className="text-[#4a90e2] no-underline font-medium hover:underline">

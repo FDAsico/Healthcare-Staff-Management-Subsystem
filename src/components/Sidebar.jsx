@@ -8,6 +8,7 @@ import {
   UserCog,
   ChevronDown,
   Menu,
+  LogOut,
 } from "lucide-react";
 
 const menuItems = [
@@ -23,7 +24,7 @@ const menuItems = [
     ],
   },
   { name: "Medical Records", icon: FileText, path: "/record" },
-
+  { name: "Shift Schedule", icon: UserCog, path: "/shift-schedule" },
 ];
 
 const Sidebar = () => {
@@ -34,7 +35,6 @@ const Sidebar = () => {
     () => localStorage.getItem("sidebar-collapsed") === "true"
   );
 
-  // Initialize active states based on current pathname
   const getActiveStateFromPath = (path) => {
     let main = null;
     let sub = null;
@@ -64,17 +64,30 @@ const Sidebar = () => {
     getActiveStateFromPath(location.pathname).open
   );
 
-  // Persist sidebar collapsed state
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", collapsed);
   }, [collapsed]);
 
-  // Sync active menu with URL
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const validPaths = menuItems.flatMap((item) =>
+      item.submenu ? item.submenu.map((s) => s.path) : [item.path]
+    );
+
+    if (!validPaths.includes(location.pathname)) {
+      navigate("/");
+      return;
+    }
+
     const newState = getActiveStateFromPath(location.pathname);
     setActiveState(newState);
     setOpenMenus(newState.open);
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -114,6 +127,11 @@ const Sidebar = () => {
     if (sub.path) navigate(sub.path);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   const isMainActive = (name) => activeState.main === name;
   const isParentActive = (submenu) =>
     submenu && activeState.sub && submenu.some((s) => s.name === activeState.sub);
@@ -125,22 +143,20 @@ const Sidebar = () => {
         collapsed ? "w-20" : "w-64"
       }`}
     >
-      {/* HEADER */}
       <div>
         {!collapsed && (
           <div className="p-4">
             <h1 className="text-lg font-bold text-black">Smart Health</h1>
-            <p className="text-xs text-black opacity-60">Predictive Care System</p>
+            <p className="text-xs text-black opacity-60">
+              Predictive Care System
+            </p>
             <div className="mt-3 h-px w-full bg-gray-300/50" />
           </div>
         )}
 
-        {/* MENU ITEMS */}
-        <div className="mt-2
-         flex flex-col gap-1">
+        <div className="mt-2 flex flex-col gap-1">
           {menuItems.map((item) => (
             <div key={item.name}>
-              {/* MAIN ITEM */}
               <div
                 onClick={() => handleMainClick(item)}
                 className={`flex items-center justify-between px-4 py-3 mx-2 rounded-lg cursor-pointer transition ${
@@ -153,18 +169,23 @@ const Sidebar = () => {
               >
                 <div className="flex items-center gap-3">
                   {item.icon && <item.icon size={22} />}
-                  {!collapsed && <span className="text-[15px] font-semibold">{item.name}</span>}
+                  {!collapsed && (
+                    <span className="text-[15px] font-semibold">
+                      {item.name}
+                    </span>
+                  )}
                 </div>
 
                 {!collapsed && item.submenu && (
                   <ChevronDown
                     size={16}
-                    className={`transition-transform ${isOpen(item.name) ? "rotate-180" : ""}`}
+                    className={`transition-transform ${
+                      isOpen(item.name) ? "rotate-180" : ""
+                    }`}
                   />
                 )}
               </div>
 
-              {/* SUBMENU */}
               {item.submenu && !collapsed && (
                 <div
                   className={`ml-10 mt-1 flex flex-col gap-1 overflow-hidden transition-all duration-300 ${
@@ -176,7 +197,9 @@ const Sidebar = () => {
                       key={sub.name}
                       onClick={() => handleSubClick(sub)}
                       className={`px-2 py-1.5 rounded-md cursor-pointer text-[14px] font-semibold transition ${
-                        activeState.sub === sub.name ? "bg-black text-white" : "text-black hover:bg-gray-100"
+                        activeState.sub === sub.name
+                          ? "bg-black text-white"
+                          : "text-black hover:bg-gray-100"
                       }`}
                     >
                       {sub.name}
@@ -189,14 +212,27 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="p-4 mt-auto">
+      <div className="p-4 mt-auto flex flex-col gap-2">
         <button
           onClick={toggleCollapsed}
           className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-gray-100 transition"
         >
           <Menu size={22} />
-          {!collapsed && <span className="text-[15px] font-semibold text-black">Collapse</span>}
+          {!collapsed && (
+            <span className="text-[15px] font-semibold text-black">
+              Collapse
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition text-black-600"
+        >
+          <LogOut size={22} />
+          {!collapsed && (
+            <span className="text-[15px] font-semibold">Logout</span>
+          )}
         </button>
       </div>
     </div>
