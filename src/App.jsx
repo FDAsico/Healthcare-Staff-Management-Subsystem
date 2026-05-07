@@ -1,171 +1,56 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  FileText,
-  UserCog,
-  BarChart3,
-  ChevronDown,
-  Menu,
-  UserCheck,
-  LogOut
-} from "lucide-react";
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
+import StaffManagement from './pages/StaffManagement';
+import ShiftManagement from './pages/ShiftManagement';
+// import Login from './pages/Login'; // Uncomment when groupmate's Login is ready
 
-const allMenuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard", roles: ["doctor", "pharmacist", "admin"] },
-  { name: "Patients", icon: Users, path: null, roles: ["doctor", "admin"],
-    submenu: [
-      { name: "All Patients", path: null },
-    ],
-  },
-  { name: "Appointments", icon: Calendar, path: null, roles: ["doctor", "admin"],
-    submenu: [
-      { name: "All Appointments", path: null },
-      { name: "Calendar View", path: null },
-    ],
-  },
-  { name: "Medical Records", icon: FileText, path: null, roles: ["doctor", "admin"] },
-  { name: "Shift Schedule", icon: UserCheck, path: "/shiftmanagement", roles: ["doctor", "pharmacist", "admin"] },
-  { name: "Staff Management", icon: UserCog, path: "/staffmanagement", roles: ["pharmacist", "admin"] },
-];
+function App() {
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("sidebar-collapsed") === "true"
+  );
 
-const Sidebar = ({ collapsed, setCollapsed, role = "admin" }) => {
-  const menuItems = allMenuItems.filter((item) => item.roles.includes(role));
-  const navigate = useNavigate();
+  // TODO: Switch to this once groupmate's Login is ready:
+  // const [user, setUser] = useState(null);
 
-  const [openMenus, setOpenMenus] = useState([]);
-  const [activeMain, setActiveMain] = useState(null);
-  const [activeSub, setActiveSub] = useState(null);
-
-  useEffect(() => {
-    localStorage.setItem("sidebar-collapsed", collapsed);
-  }, [collapsed]);
-
-  const handleMainClick = (item) => {
-    setActiveMain(item.name);
-    setActiveSub(null);
-
-    if (item.submenu) {
-      setOpenMenus((prev) =>
-        prev.includes(item.name)
-          ? prev.filter((m) => m !== item.name)
-          : [...prev, item.name]
-      );
-    } else if (item.path) {
-      navigate(item.path);
-    }
-  };
-
-  const handleSubClick = (mainName, sub) => {
-    setActiveSub(sub.name);
-    setActiveMain(null);
-    if (sub.path) navigate(sub.path);
-  };
-
-  const isMainActive = (name) => activeMain === name;
-  const isParentActive = (submenu) =>
-    submenu && submenu.some((s) => s.name === activeSub);
-  const isOpen = (name) => openMenus.includes(name);
+  // Temporary: hardcoded for testing — change role to "doctor", "nurse", or "pharmacist" to test
+  const [user] = useState({ name: "Admin", role: "admin" });
 
   return (
-    <div
-      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-300/20 z-50 flex flex-col transition-all duration-300 ${
-        collapsed ? "w-20" : "w-64"
-      }`}
-    >
-      {/* HEADER */}
-      <div>
-        {!collapsed && (
-          <div className="p-4">
-            <h1 className="text-lg font-bold text-black">Smart Health</h1>
-            <p className="text-xs text-black opacity-60">Predictive Care System</p>
-            <div className="mt-3 h-px w-full bg-gray-300/50" />
-          </div>
-        )}
+    <BrowserRouter>
+      {/* TODO: Uncomment when groupmate's Login is ready */}
+      {/* <Routes>
+        <Route path="/login" element={<Login onLogin={setUser} />} />
+        <Route path="/*" element={
+          user ? ( */}
 
-        {/* MENU */}
-        <div className="mt-2 flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-110px)]">
-          {menuItems.map(({ name, icon: Icon, submenu, path }) => (
-            <div key={name}>
-              {/* MAIN ITEM */}
-              <div
-                onClick={() => handleMainClick({ name, submenu, path })}
-                className={`flex items-center justify-between px-4 py-3 mx-2 rounded-lg cursor-pointer transition ${
-                  isMainActive(name)
-                    ? "bg-black text-white"
-                    : isParentActive(submenu)
-                    ? "bg-gray-200 text-black"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon size={22} />
-                  {!collapsed && (
-                    <span className="text-[15px] font-semibold">{name}</span>
-                  )}
-                </div>
-                {!collapsed && submenu && (
-                  <ChevronDown
-                    size={16}
-                    className={`transition-transform ${isOpen(name) ? "rotate-180" : ""}`}
-                  />
-                )}
-              </div>
-
-              {/* SUBMENU */}
-              {submenu && !collapsed && (
-                <div
-                  className={`ml-10 mt-1 flex flex-col gap-1 overflow-hidden transition-all duration-300 ${
-                    isOpen(name) ? "max-h-40" : "max-h-0"
-                  }`}
-                >
-                  {submenu.map((sub) => {
-                    const active = activeSub === sub.name;
-                    return (
-                      <div
-                        key={sub.name}
-                        onClick={() => handleSubClick(name, sub)}
-                        className={`px-2 py-1.5 rounded-md cursor-pointer text-[14px] font-semibold transition ${
-                          active ? "bg-black text-white" : "text-black hover:bg-gray-100"
-                        }`}
-                      >
-                        {sub.name}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          role={user.role}
+        />
+        <div
+          className="flex-1 overflow-auto transition-all duration-300"
+          style={{ marginLeft: collapsed ? "80px" : "256px" }}
+        >
+          <Routes>
+            <Route path="/" element={<ShiftManagement role={user.role} />} />
+            <Route path="/shiftmanagement" element={<ShiftManagement role={user.role} />} />
+            <Route path="/staffmanagement" element={<StaffManagement role={user.role} />} />
+          </Routes>
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="p-4 mt-auto">
-        <button
-          onClick={() => setCollapsed((p) => !p)}
-          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          <Menu size={22} />
-          {!collapsed && (
-            <span className="text-[15px] font-semibold text-black">Collapse</span>
-          )}
-        </button>
+      {/* TODO: Uncomment when groupmate's Login is ready */}
+      {/* ) : (
+            <Navigate to="/login" />
+          )
+        } />
+      </Routes> */}
 
-        <button
-          onClick={null}
-          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition text-black-600"
-        >
-          <LogOut size={22} />
-          {!collapsed && (
-            <span className="text-[15px] font-semibold">Logout</span>
-          )}
-        </button>
-      </div>
-    </div>
+    </BrowserRouter>
   );
-};
+}
 
-export default Sidebar;
+export default App;

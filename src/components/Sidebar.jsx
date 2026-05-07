@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -9,31 +10,34 @@ import {
   ChevronDown,
   Menu,
   UserCheck,
+  LogOut
 } from "lucide-react";
 
-// Menu (may abang na "path" pero hindi pa ginagamit)
-const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: null },
-  { name: "Patients", icon: Users, path: null },
-  { name: "Appointments", icon: Calendar, path: null,
+const allMenuItems = [
+  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard", roles: ["doctor", "pharmacist", "admin"] },
+  { name: "Patients", icon: Users, path: null, roles: ["doctor", "admin"],
+    submenu: [
+      { name: "All Patients", path: null },
+    ],
+  },
+  { name: "Appointments", icon: Calendar, path: null, roles: ["doctor", "admin"],
     submenu: [
       { name: "All Appointments", path: null },
       { name: "Calendar View", path: null },
-    ], 
-},
-  { name: "Medical Records", icon: FileText, path: null,},
-  { name: "Shift Management", icon: UserCheck, path: "/shiftmanagement" },
+    ],
+  },
+  { name: "Medical Records", icon: FileText, path: null, roles: ["doctor", "admin"] },
+  { name: "Shift Schedule", icon: UserCheck, path: "/shiftmanagement", roles: ["doctor", "pharmacist", "admin"] },
+  { name: "Staff Management", icon: UserCog, path: "/staffmanagement", roles: ["pharmacist", "admin"] },
 ];
 
-// Sidebar
-const Sidebar = ({collapsed, setCollapsed}) => {
-  const [openMenus, setOpenMenus] = useState([]);
-  const [activeMain, setActiveMain] = useState("Dashboard");
-  const [activeSub, setActiveSub] = useState(null);
+const Sidebar = ({ collapsed, setCollapsed, role = "admin" }) => {
+  const menuItems = allMenuItems.filter((item) => item.roles.includes(role));
+  const navigate = useNavigate();
 
-  /*const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem("sidebar-collapsed") === "true"
-  );*/
+  const [openMenus, setOpenMenus] = useState([]);
+  const [activeMain, setActiveMain] = useState(null);
+  const [activeSub, setActiveSub] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", collapsed);
@@ -49,25 +53,20 @@ const Sidebar = ({collapsed, setCollapsed}) => {
           ? prev.filter((m) => m !== item.name)
           : [...prev, item.name]
       );
-    } else {
-      // ABANG LANG (wala munang navigation)
-      console.log("Clicked main:", item.name);
+    } else if (item.path) {
+      navigate(item.path);
     }
   };
 
   const handleSubClick = (mainName, sub) => {
     setActiveSub(sub.name);
     setActiveMain(null);
-
-    // ABANG LANG
-    console.log("Clicked submenu:", sub.name);
+    if (sub.path) navigate(sub.path);
   };
 
   const isMainActive = (name) => activeMain === name;
-
   const isParentActive = (submenu) =>
     submenu && submenu.some((s) => s.name === activeSub);
-
   const isOpen = (name) => openMenus.includes(name);
 
   return (
@@ -81,9 +80,7 @@ const Sidebar = ({collapsed, setCollapsed}) => {
         {!collapsed && (
           <div className="p-4">
             <h1 className="text-lg font-bold text-black">Smart Health</h1>
-            <p className="text-xs text-black opacity-60">
-              Predictive Care System
-            </p>
+            <p className="text-xs text-black opacity-60">Predictive Care System</p>
             <div className="mt-3 h-px w-full bg-gray-300/50" />
           </div>
         )}
@@ -94,9 +91,7 @@ const Sidebar = ({collapsed, setCollapsed}) => {
             <div key={name}>
               {/* MAIN ITEM */}
               <div
-                onClick={() =>
-                  handleMainClick({ name, submenu, path })
-                }
+                onClick={() => handleMainClick({ name, submenu, path })}
                 className={`flex items-center justify-between px-4 py-3 mx-2 rounded-lg cursor-pointer transition ${
                   isMainActive(name)
                     ? "bg-black text-white"
@@ -108,18 +103,13 @@ const Sidebar = ({collapsed, setCollapsed}) => {
                 <div className="flex items-center gap-3">
                   <Icon size={22} />
                   {!collapsed && (
-                    <span className="text-[15px] font-semibold">
-                      {name}
-                    </span>
+                    <span className="text-[15px] font-semibold">{name}</span>
                   )}
                 </div>
-
                 {!collapsed && submenu && (
                   <ChevronDown
                     size={16}
-                    className={`transition-transform ${
-                      isOpen(name) ? "rotate-180" : ""
-                    }`}
+                    className={`transition-transform ${isOpen(name) ? "rotate-180" : ""}`}
                   />
                 )}
               </div>
@@ -133,15 +123,12 @@ const Sidebar = ({collapsed, setCollapsed}) => {
                 >
                   {submenu.map((sub) => {
                     const active = activeSub === sub.name;
-
                     return (
                       <div
                         key={sub.name}
                         onClick={() => handleSubClick(name, sub)}
                         className={`px-2 py-1.5 rounded-md cursor-pointer text-[14px] font-semibold transition ${
-                          active
-                            ? "bg-black text-white"
-                            : "text-black hover:bg-gray-100"
+                          active ? "bg-black text-white" : "text-black hover:bg-gray-100"
                         }`}
                       >
                         {sub.name}
@@ -163,9 +150,17 @@ const Sidebar = ({collapsed, setCollapsed}) => {
         >
           <Menu size={22} />
           {!collapsed && (
-            <span className="text-[15px] font-semibold text-black">
-              Collapse
-            </span>
+            <span className="text-[15px] font-semibold text-black">Collapse</span>
+          )}
+        </button>
+
+        <button
+          onClick={null}
+          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition text-black-600"
+        >
+          <LogOut size={22} />
+          {!collapsed && (
+            <span className="text-[15px] font-semibold">Logout</span>
           )}
         </button>
       </div>

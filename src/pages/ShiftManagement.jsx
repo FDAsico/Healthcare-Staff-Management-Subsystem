@@ -1,16 +1,4 @@
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import {
-  Users,
-  Calendar,
-  Activity,
-  AlertCircle,
-  CheckCircle,
-  FileText,
-  Pill,
-  X,
-  AlertTriangle,
-} from "lucide-react";
 
 const sunIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,12 +39,13 @@ const shifts = [
   { id: "night",   label: "Night Shift",   time: "00:00 - 08:00", icon: moonIcon   },
 ];
 
-function ShiftManagement() {
+function ShiftManagement({ role = "admin" }) {
   const [schedules] = useState({ morning: [], evening: [], night: [] });
 
   const handleAddShift = () => {
     // placeholder — modal/page not yet created
   };
+
   return (
     <div className="flex-1 bg-gray-50 min-h-screen p-4 sm:p-8">
 
@@ -69,7 +58,20 @@ function ShiftManagement() {
           <p className="text-sm font-semibold text-gray-800">Shift Schedule</p>
           <p className="text-xs text-gray-400 mt-0.5">Manage staff shifts and schedules</p>
         </div>
-        
+
+        {/* Only admin can see Add Shift button */}
+        {role === "admin" && (
+          <button
+            onClick={handleAddShift}
+            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors w-fit"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Shift
+          </button>
+        )}
       </div>
 
       {/* Shift Sections */}
@@ -90,19 +92,17 @@ function ShiftManagement() {
                 <p className="text-xs text-gray-300 text-center py-3">No schedules yet.</p>
               ) : (
                 schedules[shift.id].map((s, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-1 sm:gap-0">
-                <span className="text-sm font-medium text-gray-800">{s.name}</span>
-                {s.role && (
-                <span className="text-xs text-gray-400">{s.role}</span>
-            )}
-                {s.status && (
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                    s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                }`}>
-                {s.status}
-                </span>
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-1 sm:gap-0">
+                    <span className="text-sm font-medium text-gray-800">{s.name}</span>
+                    {s.role && <span className="text-xs text-gray-400">{s.role}</span>}
+                    {s.status && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
+                        s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {s.status}
+                      </span>
                     )}
-                </div>
+                  </div>
                 ))
               )}
             </div>
