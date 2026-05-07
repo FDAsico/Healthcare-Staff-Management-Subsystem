@@ -8,7 +8,13 @@ import CalendarView from './pages/CalendarView'
 import MedicalRecord from './pages/MedicalRecord'
 import login from './pages/login'
 import ShiftSchedule from './pages/ShiftSchedule' 
-
+import NurseDashboard from './pages/NurseDashboard'
+import NursePatient from './pages/NursePatient'
+import NurseAppointment from './pages/NurseAppointment'
+import NurseSidebar from './components/NurseSidebar'
+import NurseCalendar from './pages/NurseCalendar'
+import NurseMedicalRecord from './pages/NurseMedicalRecord'
+import NurseShiftSchedule from './pages/NurseShiftSchedule'
 
 
 const App = () => {
@@ -27,22 +33,30 @@ const App = () => {
     setUserRole('');
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-  
   return (
     <div>
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/patients" element={<Patients />} />
-        <Route path="/appointments" element={<Appointment />} />
-        <Route path="/appointments/all" element={<Appointment />} />
-        <Route path="/appointments/calendar" element={<CalendarView />} />
-        <Route path="/record" element={<MedicalRecord />} />
-        <Route path="/shift-schedule" element={<ShiftSchedule />} />
-        
+        <Route path="/nurse-dashboard" element={<NurseDashboard />} />
+        <Route path="/nurse-patient" element={<NursePatient />} />
+        <Route path="/nurse-appointment" element={<NurseAppointment />} />
+        <Route path="/nurse-calendar" element={<NurseCalendar />} />
+        <Route path="/nurse-medical-record" element={<NurseMedicalRecord />} />
+        <Route path="/nurse-shift-schedule" element={<NurseShiftSchedule />} />
+
+        {isAuthenticated ? (
+          <>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/patients" element={<Patients />} />
+            <Route path="/appointments" element={<Appointment />} />
+            <Route path="/appointments/all" element={<Appointment />} />
+            <Route path="/appointments/calendar" element={<CalendarView />} />
+            <Route path="/record" element={<MedicalRecord />} />
+            <Route path="/shift-schedule" element={<ShiftSchedule />} />
+          </>
+        ) : (
+          <Route path="/" element={<Login onLogin={handleLogin} />} />
+        )}
       </Routes>
     </div>
   )
