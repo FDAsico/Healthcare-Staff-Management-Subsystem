@@ -10,7 +10,7 @@ router.use(apiKeyAuth);
 // GET /api/v1/staff/public/pms/staff/
 router.get(
   "/pms/staff",
-  requireSubsystem("patient"),
+  requireSubsystem("pms"),
   async (req, res) => {
     try {
       const { role } = req.query;
@@ -61,7 +61,7 @@ router.get(
 // GET /api/v1/staff/public/pms/staff/:id/schedules
 router.get(
   "/pms/staff/:id/schedules",
-  requireSubsystem("patient"),
+  requireSubsystem("pms"),
   validateUUID("id"),
   async (req, res) => {
     try {

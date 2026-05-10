@@ -3,9 +3,9 @@ import { Request, Response, NextFunction } from "express";
 // Each subsystem gets its own key in your .env
 const SUBSYSTEM_KEYS: Record<string, string> = {
   // admin: process.env.SUBSYSTEM_API_KEY || "",
-  pms: process.env.SUBSYSTEM_API_KEY,
+  pms: process.env.PMS_API_KEY,
   // predictive: process.env.SUBSYSTEM_API_KEY || "",
-  inventory: process.env.SUBSYSTEM_API_KEY,
+  inventory: process.env.INVENTORY_API_KEY,
   // support: process.env.SUBSYSTEM_API_KEY || "",
   // billing: process.env.SUBSYSTEM_API_KEY || "",
 };

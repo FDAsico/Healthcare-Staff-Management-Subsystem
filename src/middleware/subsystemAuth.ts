@@ -7,7 +7,7 @@ export function requireSubsystem(...allowed: string[]) {
     }
     if (!allowed.includes(req.subsystem)) {
       return res.status(403).json({
-        message: `Endpoint restricted to: ${allowed.join(", ")}`,
+        message: `Endpoint restricted`,
       });
     }
     next();
