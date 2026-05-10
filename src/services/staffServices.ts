@@ -45,7 +45,6 @@ export async function create(data: Record<string, unknown>) {
     throw new Error("user_id is required");
   }
 
-  // 1. Verify user exists in Admin's Staff subsystem list
   const adminUsers = await getStaffUsersFromAdmin();
   const adminUser = adminUsers.find((u) => u.user_id === user_id);
 
@@ -57,7 +56,6 @@ export async function create(data: Record<string, unknown>) {
     throw new Error("User already has a staff profile");
   }
 
-  // 2. Cache user locally
   await prisma.user.upsert({
     where: { user_id: adminUser.user_id },
     update: {
@@ -75,7 +73,6 @@ export async function create(data: Record<string, unknown>) {
     },
   });
 
-  // 3. Create staff profile
   const staff = await prisma.staff.create({
     data: {
       ...staffData,
@@ -88,7 +85,6 @@ export async function create(data: Record<string, unknown>) {
     },
   });
 
-  // 4. PATCH staff_id back to Admin
   try {
     await patchStaffIdToAdmin(adminUser.user_id, staff.staff_id);
   } catch (err) {

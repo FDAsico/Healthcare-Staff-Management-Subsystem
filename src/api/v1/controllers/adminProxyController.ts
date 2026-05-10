@@ -1,13 +1,11 @@
 import { Request, Response } from "express";
 import { getStaffUsersFromAdmin } from "../../../clients/adminClient.js";
 
-/** List all users from Admin that belong to Staff subsystem */
+// List all users from Admin that belong to Staff subsystem
 export async function listStaffUsers(req: Request, res: Response) {
   try {
     const users = await getStaffUsersFromAdmin();
-
     const pending = users.filter((u) => u.staff_id === null);
-
     res.json({
       total: users.length,
       pending: pending.length,
@@ -33,9 +31,7 @@ export async function getUser(req: Request, res: Response) {
   try {
     const users = await getStaffUsersFromAdmin();
     const user = users.find((u) => u.user_id === req.params.id);
-
     if (!user) return res.status(404).json({ message: "User not found" });
-
     res.json({
       user_id: user.user_id,
       username: user.username,

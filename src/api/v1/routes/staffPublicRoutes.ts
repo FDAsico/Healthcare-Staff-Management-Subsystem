@@ -15,7 +15,6 @@ router.get(
     try {
       const { role } = req.query;
       const validRoles = ["DOCTOR", "NURSE", "PHARMACIST"];
-
       const where: any = { status: "ACTIVE" };
 
       // Filter by specific role if provided

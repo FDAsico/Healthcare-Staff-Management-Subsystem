@@ -40,7 +40,6 @@ export async function subsystemLogin(username: string, password: string) {
 }
 
 export async function getStaffUsersFromAdmin() {
-  // CORRECTED: uses /admin/api/ not /api/
   const url = `${BASE_URL}/admin/api/subsystem/users?subsystem=Staff`;
   
   console.log("[ADMIN FETCH] Fetching:", url);
@@ -82,7 +81,6 @@ export async function getStaffUsersFromAdmin() {
 }
 
 export async function getUserFromAdmin(userId: string) {
-  // General user endpoint uses /api/ per Admin PDF
   const url = `${BASE_URL}/api/users/${userId}`;
   
   const res = await fetch(url, {
@@ -98,7 +96,6 @@ export async function getUserFromAdmin(userId: string) {
 
 export async function patchStaffIdToAdmin(userId: string, staffId: string) {
   const url = `${BASE_URL}/admin/api/subsystem/users/${userId}/staff-id`;
-  
   console.log("[ADMIN PATCH] Fetching:", url);
 
   const res = await fetch(url, {

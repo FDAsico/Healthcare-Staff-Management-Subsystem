@@ -7,26 +7,17 @@ import { prisma } from "../../../db.js";
 export async function login(req: Request, res: Response) {
   try {
     const { username, password } = req.body;
-
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password required" });
     }
-
-    // 1. Authenticate with Admin (your backend sends subsystem: "Staff")
     const adminAuth = await subsystemLogin(username, password);
-
-    // 2. Cache user locally
     const localUser = await cacheUserFromAdmin({
       user_id: adminAuth.user.user_id,
       username: adminAuth.user.username,
       role: adminAuth.user.role,
       status: adminAuth.user.status,
     });
-
-    // 3. Generate YOUR JWT
     const accessToken = generateAccessToken(localUser.user_id, localUser.role);
-
-    // 4. Check if staff profile exists
     const staff = await prisma.staff.findUnique({
       where: { user_id: localUser.user_id },
       select: {
@@ -37,7 +28,6 @@ export async function login(req: Request, res: Response) {
         status: true,
       },
     });
-
     res.json({
       message: "Login successful",
       accessToken,
@@ -61,7 +51,6 @@ export async function me(req: Request, res: Response) {
     if (!req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-
     const user = await prisma.user.findUnique({
       where: { user_id: req.user.userId },
       select: {
@@ -72,9 +61,7 @@ export async function me(req: Request, res: Response) {
         isActive: true,
       },
     });
-
     if (!user) return res.status(404).json({ message: "User not found" });
-
     const staff = await prisma.staff.findUnique({
       where: { user_id: user.user_id },
       select: {
@@ -86,13 +73,11 @@ export async function me(req: Request, res: Response) {
         status: true,
       },
     });
-
     res.json({ user, staffProfile: staff });
   } catch (error) {
     res.status(500).json({ message: error instanceof Error ? error.message : "Error" });
   }
 }
-
 export async function logout(req: Request, res: Response) {
   res.json({ message: "Logged out successfully" });
 }
