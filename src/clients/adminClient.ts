@@ -24,7 +24,7 @@ export async function subsystemLogin(username: string, password: string) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Admin auth failed: ${res.status}`);
+    throw new Error((err as Error).message || `Admin auth failed: ${res.status}`);
   }
 
   return res.json() as Promise<{
