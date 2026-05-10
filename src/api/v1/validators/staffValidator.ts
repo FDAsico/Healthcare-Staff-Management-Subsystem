@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 
-const VALID_ROLES = [
-  "DOCTOR", "NURSE", "PHARMACIST","ADMIN",
-];
-
+const VALID_ROLES = ["DOCTOR", "NURSE", "PHARMACIST", "SUPPORT", "ADMIN"];
 const VALID_STATUSES = ["ACTIVE", "ON_LEAVE", "SUSPENDED", "RESIGNED", "TERMINATED"];
 const VALID_ATTENDANCE = ["PRESENT", "ABSENT", "LATE", "HALF_DAY", "ON_LEAVE", "EARLY_DEPARTURE"];
 const VALID_LEAVE_TYPES = ["SICK", "VACATION", "EMERGENCY", "MATERNITY", "PATERNITY", "UNPAID", "BEREAVEMENT", "STUDY", "MEDICAL"];
 
 export function validateCreateStaff(req: Request, res: Response, next: NextFunction) {
-  const { firstName, lastName, role, username, email, passwordHash } = req.body;
+  const { user_id, firstName, lastName, role } = req.body;
 
+  if (!user_id || user_id.trim() === "") {
+    return res.status(400).json({ message: "user_id from Admin Subsystem is required" });
+  }
   if (!firstName || firstName.trim() === "") {
     return res.status(400).json({ message: "First name is required" });
   }
@@ -19,18 +19,6 @@ export function validateCreateStaff(req: Request, res: Response, next: NextFunct
   }
   if (!role || !VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: "Valid staff role is required" });
-  }
-
-  if (!req.body.user_id) {
-    if (!username || username.trim() === "") {
-      return res.status(400).json({ message: "Username is required when creating a new user" });
-    }
-    if (!email || email.trim() === "") {
-      return res.status(400).json({ message: "Email is required when creating a new user" });
-    }
-    if (!passwordHash || passwordHash.trim() === "") {
-      return res.status(400).json({ message: "Password hash is required when creating a new user" });
-    }
   }
 
   next();

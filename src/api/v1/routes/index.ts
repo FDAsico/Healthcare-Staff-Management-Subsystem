@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authRoutes from "./authRoutes.js";
+import adminProxyRoutes from "./adminProxyRoutes.js";
 import staffRoutes from "./staffRoutes.js";
 import staffPublicRoutes from "./staffPublicRoutes.js";
 import departmentRoutes from "./departmentRoutes.js";
@@ -11,6 +12,7 @@ import auditLogRoutes from "./auditLogRoutes.js";
 const router = Router();
 
 router.use("/auth", authRoutes);
+router.use("/admin-proxy", adminProxyRoutes);
 router.use("/staff/public", staffPublicRoutes);
 router.use("/staff", staffRoutes);
 router.use("/departments", departmentRoutes);

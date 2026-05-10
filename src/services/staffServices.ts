@@ -1,4 +1,6 @@
 import { prisma } from "../db.js";
+import { getStaffUsersFromAdmin, patchStaffIdToAdmin } from "../clients/adminClient.js";
+import { mapAdminRoleName } from "../utils/roleMapper.js";
 
 export async function getAll(query: Record<string, unknown>) {
   const page = Number(query.page) || 1;
@@ -9,7 +11,10 @@ export async function getAll(query: Record<string, unknown>) {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { hiredAt: "desc" },
-      include: { user: { select: { username: true, email: true, isActive: true } }, department: true },
+      include: {
+        user: { select: { username: true, email: true, isActive: true } },
+        department: true,
+      },
     }),
     prisma.staff.count(),
   ]);
@@ -34,31 +39,63 @@ export async function getById(id: string) {
 }
 
 export async function create(data: Record<string, unknown>) {
-  const { username, email, passwordHash, userRole, ...staffData } = data;
+  const { user_id, ...staffData } = data;
 
-  if (!username || !email || !passwordHash) {
-    throw new Error("Username, email, and passwordHash required");
+  if (!user_id) {
+    throw new Error("user_id is required");
   }
 
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        username: username as string,
-        email: email as string,
-        passwordHash: passwordHash as string,
-        role: (userRole as string) || "STAFF",
-      },
-    });
+  // 1. Verify user exists in Admin's Staff subsystem list
+  const adminUsers = await getStaffUsersFromAdmin();
+  const adminUser = adminUsers.find((u) => u.user_id === user_id);
 
-    return tx.staff.create({
-      data: {
-        ...staffData,
-        user_id: user.user_id,
-        email: (staffData.email as string) || (email as string),
-      } as any,
-      include: { user: { select: { username: true, email: true } }, department: true },
-    });
+  if (!adminUser) {
+    throw new Error("User not found in Admin Staff subsystem");
+  }
+
+  if (adminUser.staff_id) {
+    throw new Error("User already has a staff profile");
+  }
+
+  // 2. Cache user locally
+  await prisma.user.upsert({
+    where: { user_id: adminUser.user_id },
+    update: {
+      username: adminUser.username,
+      role: mapAdminRoleName(adminUser.Role.name),
+      isActive: adminUser.status === "active",
+    },
+    create: {
+      user_id: adminUser.user_id,
+      username: adminUser.username,
+      email: `${adminUser.username}@hospital.com`, // fallback
+      passwordHash: "managed-by-admin",
+      role: mapAdminRoleName(adminUser.Role.name),
+      isActive: adminUser.status === "active",
+    },
   });
+
+  // 3. Create staff profile
+  const staff = await prisma.staff.create({
+    data: {
+      ...staffData,
+      user_id: adminUser.user_id,
+      email: (staffData.email as string) || `${adminUser.username}@hospital.com`,
+    } as any,
+    include: {
+      user: { select: { username: true, email: true } },
+      department: true,
+    },
+  });
+
+  // 4. PATCH staff_id back to Admin
+  try {
+    await patchStaffIdToAdmin(adminUser.user_id, staff.staff_id);
+  } catch (err) {
+    console.error(`[ADMIN SYNC FAILED] user_id=${adminUser.user_id}, staff_id=${staff.staff_id}`, err);
+  }
+
+  return staff;
 }
 
 export async function update(id: string, data: Record<string, unknown>) {
@@ -75,7 +112,10 @@ export async function remove(id: string) {
       where: { staff_id: id },
       data: { status: "TERMINATED", terminatedAt: new Date() },
     });
-    await tx.user.update({ where: { user_id: staff.user_id }, data: { isActive: false } });
+    await tx.user.update({
+      where: { user_id: staff.user_id },
+      data: { isActive: false },
+    });
     return staff;
   });
 }
@@ -123,4 +163,4 @@ export async function createLeave(staffId: string, data: Record<string, unknown>
       totalDays,
     } as any,
   });
-}   
+}
