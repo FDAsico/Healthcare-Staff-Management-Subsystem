@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
 
 const BASE_URL = (process.env.ADMIN_SUBSYSTEM_URL || "").trim().replace(/\/$/, "");
 const SUBSYSTEM_KEY = (process.env.ADMIN_SUBSYSTEM_KEY || "").trim();
