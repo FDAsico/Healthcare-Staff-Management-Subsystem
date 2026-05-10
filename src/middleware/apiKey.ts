@@ -2,18 +2,18 @@ import { Request, Response, NextFunction } from "express";
 
 // Each subsystem gets its own key in your .env
 const SUBSYSTEM_KEYS: Record<string, string> = {
-  admin: process.env.SUBSYSTEM_API_KEY || "",
-  patient: process.env.SUBSYSTEM_API_KEY || "",
+  // admin: process.env.SUBSYSTEM_API_KEY || "",
+  pms: process.env.SUBSYSTEM_API_KEY,
   // predictive: process.env.SUBSYSTEM_API_KEY || "",
-  inventory: process.env.SUBSYSTEM_API_KEY || "",
-  support: process.env.SUBSYSTEM_API_KEY || "",
+  inventory: process.env.SUBSYSTEM_API_KEY,
+  // support: process.env.SUBSYSTEM_API_KEY || "",
   // billing: process.env.SUBSYSTEM_API_KEY || "",
 };
 
 declare global {
   namespace Express {
     interface Request {
-      subsystem?: string; // which subsystem is calling
+      subsystem?: string;
     }
   }
 }

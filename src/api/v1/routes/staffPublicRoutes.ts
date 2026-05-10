@@ -1,137 +1,183 @@
 import { Router } from "express";
 import { apiKeyAuth } from "../../../middleware/apiKey.js";
+import { requireSubsystem } from "../../../middleware/subsystemAuth.js";
 import { validateUUID } from "../validators/commonValidator.js";
 import { prisma } from "../../../db.js";
 
 const router = Router();
 router.use(apiKeyAuth);
 
-// GET /api/v1/staff/public/
-router.get("/", async (req, res) => {
-  try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
+// GET /api/v1/staff/public/pms/staff/
+router.get(
+  "/pms/staff",
+  requireSubsystem("patient"),
+  async (req, res) => {
+    try {
+      const { role } = req.query;
+      const validRoles = ["DOCTOR", "NURSE", "PHARMACIST"];
 
-    const [data, total] = await prisma.$transaction([
-      prisma.staff.findMany({
-        skip: (page - 1) * limit,
-        take: limit,
-        where: { status: "ACTIVE" },
+      const where: any = { status: "ACTIVE" };
+
+      // Filter by specific role if provided
+      if (role) {
+        const upperRole = (role as string).toUpperCase();
+        if (!validRoles.includes(upperRole)) {
+          return res.status(400).json({
+            message: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
+          });
+        }
+        where.role = upperRole;
+      } else {
+        // Default: show all patient-facing roles
+        where.role = { in: validRoles };
+      }
+
+      const staff = await prisma.staff.findMany({
+        where,
         orderBy: { lastName: "asc" },
         select: {
+          staff_id: true,
           firstName: true,
           lastName: true,
-          gender: true,
-          dateOfBirth: true,
-          phone: true,
+          role: true,
           email: true,
-          address: true,
+          phone: true,
+          department: { select: { name: true, location: true } },
+          availability: { select: { isAvailable: true, availableFrom: true, availableUntil: true } },
         },
-      }),
-      prisma.staff.count({ where: { status: "ACTIVE" } }),
-    ]);
+      });
 
-    res.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
-  } catch (e) {
-    res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
-  }
-});
-
-
-// GET /api/v1/staff/public/:id/profile-for-support
-router.get("/:id/profile-for-support", validateUUID("id"), async (req, res) => {
-  try {
-    const staff = await prisma.staff.findUnique({
-      where: { staff_id: req.params.id as string },
-      select: {
-        firstName: true,
-        lastName: true,
-        gender: true,
-        dateOfBirth: true,
-        phone: true,
-        email: true,
-        address: true,
-      },
-    });
-
-    if (!staff) return res.status(404).json({ message: "Staff not found" });
-
-    res.json({
-      firstName: staff.firstName,
-      lastName: staff.lastName,
-      gender: staff.gender,
-      dateOfBirth: staff.dateOfBirth,
-      contact: { phone: staff.phone, email: staff.email },
-      address: staff.address,
-    });
-  } catch (e) {
-    res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
-  }
-});
-
-// GET /api/v1/staff/public/:id/role
-router.get("/:id/role", validateUUID("id"), async (req, res) => {
-  try {
-    const staff = await prisma.staff.findUnique({
-      where: { staff_id: req.params.id as string },
-      select: { staff_id: true, role: true, status: true, firstName: true, lastName: true },
-    });
-
-    if (!staff) return res.status(404).json({ message: "Staff not found" });
-    if (staff.status !== "ACTIVE") return res.status(403).json({ message: "Staff is not active" });
-
-    res.json({
-      staff_id: staff.staff_id,
-      role: staff.role,
-      name: `${staff.firstName} ${staff.lastName}`,
-      isActive: true,
-    });
-  } catch (e) {
-    res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
-  }
-});
-
-// GET /api/v1/staff/public/doctors
-router.get("/doctors", async (req, res) => {
-  try {
-    const doctors = await prisma.staff.findMany({
-      where: { role: "DOCTOR", status: "ACTIVE" },
-      select: {
-        staff_id: true,
-        firstName: true,
-        lastName: true,
-        specialization: true,
-        department_id: true,
-      },
-    });
-    res.json(doctors);
-  } catch (e) {
-    res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
-  }
-});
-
-
-// POST /api/v1/staff/public/onboard
-router.post("/onboard", async (req, res) => {
-  try {
-    const { user_id, ...staffData } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id is required from Admin Subsystem" });
+      res.json({
+        data: staff,
+        total: staff.length,
+        filter: role ? (role as string).toUpperCase() : "ALL",
+      });
+    } catch (e) {
+      res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
     }
-
-    const user = await prisma.user.findUnique({ where: { user_id } });
-    if (!user) return res.status(404).json({ message: "User not found in Admin Subsystem" });
-
-    const staff = await prisma.staff.create({
-      data: { ...staffData, user_id } as any,
-      include: { user: { select: { username: true, email: true, passwordHash: true } } },
-    });
-
-    res.status(201).json(staff);
-  } catch (e) {
-    res.status(400).json({ message: e instanceof Error ? e.message : "Error" });
   }
-});
+);
+
+// GET /api/v1/staff/public/pms/staff/:id/schedules
+router.get(
+  "/pms/staff/:id/schedules",
+  requireSubsystem("patient"),
+  validateUUID("id"),
+  async (req, res) => {
+    try {
+      const staff = await prisma.staff.findUnique({
+        where: { staff_id: req.params.id as string },
+        select: { role: true, firstName: true, lastName: true },
+      });
+
+      if (!staff) return res.status(404).json({ message: "Staff not found" });
+
+      const schedules = await prisma.schedule.findMany({
+        where: {
+          staff_id: req.params.id as string,
+          shiftDate: { gte: new Date() },
+          status: { in: ["SCHEDULED", "CONFIRMED"] },
+        },
+        orderBy: { shiftDate: "asc" },
+        take: 30,
+        select: {
+          schedule_id: true,
+          shiftDate: true,
+          startTime: true,
+          endTime: true,
+          shiftType: true,
+          status: true,
+          department: { select: { name: true } },
+        },
+      });
+
+      res.json({
+        staff: {
+          staff_id: req.params.id,
+          name: `${staff.firstName} ${staff.lastName}`,
+          role: staff.role,
+        },
+        data: schedules,
+      });
+    } catch (e) {
+      res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
+    }
+  }
+);
+
+// GET /api/v1/staff/public/inventory/pharmacists
+router.get(
+  "/inventory/pharmacists",
+  requireSubsystem("inventory"),
+  async (req, res) => {
+    try {
+      const pharmacists = await prisma.staff.findMany({
+        where: { role: "PHARMACIST", status: "ACTIVE" },
+        select: {
+          staff_id: true,
+          firstName: true,
+          lastName: true,
+          employeeId: true,
+          email: true,
+        },
+      });
+      res.json({ data: pharmacists, total: pharmacists.length });
+    } catch (e) {
+      res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
+    }
+  }
+);
+
+// GET /api/v1/staff/public/inventory/verify/:id
+router.get(
+  "/inventory/verify/:id",
+  requireSubsystem("inventory"),
+  validateUUID("id"),
+  async (req, res) => {
+    try {
+      const staff = await prisma.staff.findUnique({
+        where: { staff_id: req.params.id as string },
+        select: { staff_id: true, role: true, status: true, firstName: true, lastName: true },
+      });
+
+      const isPharmacist = staff?.role === "PHARMACIST" && staff?.status === "ACTIVE";
+
+      res.json({
+        staff_id: req.params.id,
+        name: staff ? `${staff.firstName} ${staff.lastName}` : null,
+        isPharmacist,
+        isActive: staff?.status === "ACTIVE",
+      });
+    } catch (e) {
+      res.status(500).json({ message: e instanceof Error ? e.message : "Error" });
+    }
+  }
+);
+
+router.post(
+  "/admin/onboard",
+  requireSubsystem("admin"),
+  async (req, res) => {
+    try {
+      const { user_id, ...staffData } = req.body;
+
+      if (!user_id) {
+        return res.status(400).json({ message: "user_id is required" });
+      }
+
+      const staff = await prisma.staff.create({
+        data: { ...staffData, user_id } as any,
+        include: {
+          user: { select: { username: true, email: true } },
+          department: true,
+        },
+      });
+
+      res.status(201).json(staff);
+    } catch (e) {
+      res.status(400).json({ message: e instanceof Error ? e.message : "Error" });
+    }
+  }
+);
 
 export default router;
