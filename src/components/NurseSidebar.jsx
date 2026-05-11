@@ -25,20 +25,11 @@ const menuItems = [
     path: "/nurse-patient",
   },
 
+  // CALENDAR ONLY
   {
-    name: "Appointments",
+    name: "Calendar",
     icon: Calendar,
-    submenu: [
-      {
-        name: "All Appointments",
-        path: "/nurse-appointment",
-      },
-
-      {
-        name: "Calendar View",
-        path: "/nurse-calendar",
-      },
-    ],
+    path: "/nurse-calendar",
   },
 
   {
@@ -70,16 +61,6 @@ const NurseSidebar = () => {
       collapsed
     );
   }, [collapsed]);
-
-  // AUTO OPEN APPOINTMENTS MENU WHEN INSIDE APPOINTMENT PAGES
-  useEffect(() => {
-    if (
-      location.pathname === "/nurse-appointment" ||
-      location.pathname === "/nurse-calendar"
-    ) {
-      setOpenMenus(["Appointments"]);
-    }
-  }, [location.pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -268,4 +249,3 @@ const NurseSidebar = () => {
 };
 
 export default NurseSidebar;
-``

@@ -10,7 +10,6 @@ import login from './pages/login'
 import ShiftSchedule from './pages/ShiftSchedule' 
 import NurseDashboard from './pages/NurseDashboard'
 import NursePatient from './pages/NursePatient'
-import NurseAppointment from './pages/NurseAppointment'
 import NurseSidebar from './components/NurseSidebar'
 import NurseCalendar from './pages/NurseCalendar'
 import NurseMedicalRecord from './pages/NurseMedicalRecord'
@@ -39,7 +38,6 @@ const App = () => {
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/nurse-dashboard" element={<NurseDashboard />} />
         <Route path="/nurse-patient" element={<NursePatient />} />
-        <Route path="/nurse-appointment" element={<NurseAppointment />} />
         <Route path="/nurse-calendar" element={<NurseCalendar />} />
         <Route path="/nurse-medical-record" element={<NurseMedicalRecord />} />
         <Route path="/nurse-shift-schedule" element={<NurseShiftSchedule />} />
