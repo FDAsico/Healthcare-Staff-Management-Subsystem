@@ -8,7 +8,6 @@ const InventoryTable = ({ data, onSearch }) => {
 
     return (
             <div className="min-h-screen bg-[#f9fafb] w-full p-8">
-            {/* Page Header Section */}
             <div className="flex justify-between items-start mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">
@@ -20,7 +19,6 @@ const InventoryTable = ({ data, onSearch }) => {
                 </div>  
                 
 <div className="flex justify-between items-center mb-6">
-    {/* Left Side: Title and Badge */}
     <div className="flex items-center gap-3">
         <h3 className="text-[1.1rem] font-bold text-[#111827] m-0">
             Total Products
@@ -30,10 +28,8 @@ const InventoryTable = ({ data, onSearch }) => {
         </span>
     </div>
 
-    {/* Right Side: Search and Filter */}
     <div className="flex gap-3 items-center">
         <div className="relative">
-            {/* Optional: Add a Search Icon here if using Lucide-react */}
             <input 
                 type="text" 
                 placeholder="Search" 
@@ -56,7 +52,6 @@ const InventoryTable = ({ data, onSearch }) => {
 </div>
             </div>
 
-            {/* Table */}
             <table className="w-full border-collapse text-left">
                 <thead>
                     <tr>
