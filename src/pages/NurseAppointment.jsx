@@ -1,8 +1,10 @@
+// NurseAppointment.jsx
+
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
+import NurseSidebar from "../components/NurseSidebar";
 import { Calendar, CheckCircle, Stethoscope, Briefcase } from "lucide-react";
 
-const Appointment = () => {
+const NurseAppointment = () => {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem("sidebar-collapsed") === "true"
   );
@@ -124,8 +126,8 @@ const Appointment = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen flex">
-      <Sidebar />
+    <div className="bg-blue-500/30 min-h-screen flex">
+      <NurseSidebar />
 
       <div
         className="flex-1 p-6 transition-all duration-300"
@@ -275,4 +277,4 @@ const Appointment = () => {
   );
 };
 
-export default Appointment;
+export default NurseAppointment;

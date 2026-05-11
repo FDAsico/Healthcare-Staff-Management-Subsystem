@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import {
   LayoutDashboard,
   Users,
@@ -12,22 +13,48 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { name: "Patients", icon: Users, path: "/patients" },
+  {
+    name: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/nurse-dashboard",
+  },
+
+  {
+    name: "Patients",
+    icon: Users,
+    path: "/nurse-patient",
+  },
+
   {
     name: "Appointments",
     icon: Calendar,
-    path: "/appointments",
     submenu: [
-      { name: "All Appointments", path: "/appointments/all" },
-      { name: "Calendar View", path: "/appointments/calendar" },
+      {
+        name: "All Appointments",
+        path: "/nurse-appointment",
+      },
+
+      {
+        name: "Calendar View",
+        path: "/nurse-calendar",
+      },
     ],
   },
-  { name: "Medical Records", icon: FileText, path: "/record" },
-  { name: "Shift Schedule", icon: UserCog, path: "/shift-schedule" },
+
+  {
+    name: "Medical Records",
+    icon: FileText,
+    path: "/nurse-medical-record",
+  },
+
+  {
+    name: "Shift Schedule",
+    icon: UserCog,
+    path: "/nurse-shift-schedule",
+  },
 ];
 
-const Sidebar = () => {
+const NurseSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,80 +62,45 @@ const Sidebar = () => {
     () => localStorage.getItem("sidebar-collapsed") === "true"
   );
 
-  const getActiveStateFromPath = (path) => {
-    let main = null;
-    let sub = null;
-    const open = [];
-
-    menuItems.forEach((item) => {
-      if (item.path === path) {
-        main = item.name;
-      }
-      if (item.submenu) {
-        const activeSub = item.submenu.find((s) => s.path === path);
-        if (activeSub) {
-          sub = activeSub.name;
-          open.push(item.name);
-        }
-      }
-    });
-
-    return { main: sub ? null : main, sub, open };
-  };
-
-  const [activeState, setActiveState] = useState(() =>
-    getActiveStateFromPath(location.pathname)
-  );
-
-  const [openMenus, setOpenMenus] = useState(() =>
-    getActiveStateFromPath(location.pathname).open
-  );
+  const [openMenus, setOpenMenus] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem("sidebar-collapsed", collapsed);
+    localStorage.setItem(
+      "sidebar-collapsed",
+      collapsed
+    );
   }, [collapsed]);
 
+  // AUTO OPEN APPOINTMENTS MENU WHEN INSIDE APPOINTMENT PAGES
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
+    if (
+      location.pathname === "/nurse-appointment" ||
+      location.pathname === "/nurse-calendar"
+    ) {
+      setOpenMenus(["Appointments"]);
     }
-
-    const validPaths = menuItems.flatMap((item) =>
-      item.submenu ? item.submenu.map((s) => s.path) : [item.path]
-    );
-
-    if (!validPaths.includes(location.pathname)) {
-      navigate("/");
-      return;
-    }
-
-    const newState = getActiveStateFromPath(location.pathname);
-    setActiveState(newState);
-    setOpenMenus(newState.open);
-  }, [location.pathname, navigate]);
+  }, [location.pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem("sidebar-collapsed", next);
-      window.dispatchEvent(new CustomEvent("sidebar-collapse", { detail: next }));
+
+      localStorage.setItem(
+        "sidebar-collapsed",
+        next
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("sidebar-collapse", {
+          detail: next,
+        })
+      );
+
       return next;
     });
   };
 
   const handleMainClick = (item) => {
-    setActiveState({
-      main: item.name,
-      sub: null,
-      open: activeState.open,
-    });
-
-    if (item.path && !item.submenu) {
-      navigate(item.path);
-    }
-
     if (item.submenu) {
       setOpenMenus((prev) =>
         prev.includes(item.name)
@@ -116,15 +108,14 @@ const Sidebar = () => {
           : [...prev, item.name]
       );
     }
+
+    if (item.path) {
+      navigate(item.path);
+    }
   };
 
   const handleSubClick = (sub) => {
-    setActiveState({
-      main: null,
-      sub: sub.name,
-      open: activeState.open,
-    });
-    if (sub.path) navigate(sub.path);
+    navigate(sub.path);
   };
 
   const handleLogout = () => {
@@ -132,10 +123,27 @@ const Sidebar = () => {
     navigate("/login");
   };
 
-  const isMainActive = (name) => activeState.main === name;
-  const isParentActive = (submenu) =>
-    submenu && activeState.sub && submenu.some((s) => s.name === activeState.sub);
-  const isOpen = (name) => openMenus.includes(name);
+  const isOpen = (name) =>
+    openMenus.includes(name);
+
+  // MAIN ACTIVE
+  const isMainActive = (item) => {
+    if (item.path) {
+      return location.pathname === item.path;
+    }
+
+    if (item.submenu) {
+      return item.submenu.some(
+        (sub) => sub.path === location.pathname
+      );
+    }
+
+    return false;
+  };
+
+  // SUB ACTIVE
+  const isSubActive = (path) =>
+    location.pathname === path;
 
   return (
     <div
@@ -146,10 +154,14 @@ const Sidebar = () => {
       <div>
         {!collapsed && (
           <div className="p-4">
-            <h1 className="text-lg font-bold text-black">Smart Health</h1>
+            <h1 className="text-lg font-bold text-black">
+              Smart Health
+            </h1>
+
             <p className="text-xs text-black opacity-60">
               Predictive Care System
             </p>
+
             <div className="mt-3 h-px w-full bg-gray-300/50" />
           </div>
         )}
@@ -157,18 +169,22 @@ const Sidebar = () => {
         <div className="mt-2 flex flex-col gap-1">
           {menuItems.map((item) => (
             <div key={item.name}>
+              {/* MAIN MENU */}
               <div
-                onClick={() => handleMainClick(item)}
+                onClick={() =>
+                  handleMainClick(item)
+                }
                 className={`flex items-center justify-between px-4 py-3 mx-2 rounded-lg cursor-pointer transition ${
-                  isMainActive(item.name)
+                  isMainActive(item)
                     ? "bg-black text-white"
-                    : isParentActive(item.submenu)
-                    ? "bg-gray-200 text-black"
                     : "text-black hover:bg-gray-100"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {item.icon && <item.icon size={22} />}
+                  {item.icon && (
+                    <item.icon size={22} />
+                  )}
+
                   {!collapsed && (
                     <span className="text-[15px] font-semibold">
                       {item.name}
@@ -180,24 +196,31 @@ const Sidebar = () => {
                   <ChevronDown
                     size={16}
                     className={`transition-transform ${
-                      isOpen(item.name) ? "rotate-180" : ""
+                      isOpen(item.name)
+                        ? "rotate-180"
+                        : ""
                     }`}
                   />
                 )}
               </div>
 
+              {/* SUB MENU */}
               {item.submenu && !collapsed && (
                 <div
                   className={`ml-10 mt-1 flex flex-col gap-1 overflow-hidden transition-all duration-300 ${
-                    isOpen(item.name) ? "max-h-40" : "max-h-0"
+                    isOpen(item.name)
+                      ? "max-h-40"
+                      : "max-h-0"
                   }`}
                 >
                   {item.submenu.map((sub) => (
                     <div
                       key={sub.name}
-                      onClick={() => handleSubClick(sub)}
+                      onClick={() =>
+                        handleSubClick(sub)
+                      }
                       className={`px-2 py-1.5 rounded-md cursor-pointer text-[14px] font-semibold transition ${
-                        activeState.sub === sub.name
+                        isSubActive(sub.path)
                           ? "bg-black text-white"
                           : "text-black hover:bg-gray-100"
                       }`}
@@ -212,12 +235,14 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* FOOTER */}
       <div className="p-4 mt-auto flex flex-col gap-2">
         <button
           onClick={toggleCollapsed}
           className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-gray-100 transition"
         >
           <Menu size={22} />
+
           {!collapsed && (
             <span className="text-[15px] font-semibold text-black">
               Collapse
@@ -227,11 +252,14 @@ const Sidebar = () => {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition text-black-600"
+          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition"
         >
           <LogOut size={22} />
+
           {!collapsed && (
-            <span className="text-[15px] font-semibold">Logout</span>
+            <span className="text-[15px] font-semibold">
+              Logout
+            </span>
           )}
         </button>
       </div>
@@ -239,4 +267,5 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default NurseSidebar;
+``
