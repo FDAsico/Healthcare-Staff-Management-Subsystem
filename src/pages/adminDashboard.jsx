@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
-import AddPatient from "../components/adminAddPatient";
 import {
   Users,
   Calendar,
   Activity,
   AlertCircle,
-  CheckCircle,
-  X,
   ChevronRight,
-  UserPlus,
-  CalendarPlus,
 } from "lucide-react";
 
 // ─── STORAGE HELPERS ────────────────────────────────────
@@ -22,8 +17,6 @@ const getStorage = (key, fallback = []) => {
     return fallback;
   }
 };
-
-const setStorage = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
 const getLast24Hours = (data) => {
   const now = Date.now();
@@ -38,10 +31,10 @@ const formatChange = (current, previous, suffix = "") => {
 };
 
 const seedDefaults = () => {
-  if (!localStorage.getItem("doctors")) setStorage("doctors", []);
-  if (!localStorage.getItem("departments")) setStorage("departments", []);
-  if (!localStorage.getItem("patients")) setStorage("patients", []);
-  if (!localStorage.getItem("appointments")) setStorage("appointments", []);
+  if (!localStorage.getItem("doctors")) localStorage.setItem("doctors", JSON.stringify([]));
+  if (!localStorage.getItem("departments")) localStorage.setItem("departments", JSON.stringify([]));
+  if (!localStorage.getItem("patients")) localStorage.setItem("patients", JSON.stringify([]));
+  if (!localStorage.getItem("appointments")) localStorage.setItem("appointments", JSON.stringify([]));
 };
 
 // ─── COMPONENTS ───────────────────────────────────────────
@@ -59,8 +52,6 @@ const Dashboard = () => {
     activeCases: { value: 0, change: "" },
     criticalAlerts: { value: 0, change: "" },
   });
-
-  const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
 
   useEffect(() => {
     seedDefaults();
@@ -122,20 +113,6 @@ const Dashboard = () => {
     return () => window.removeEventListener("sidebar-collapse", handler);
   }, []);
 
-  const updateStatus = (id, status) => {
-    const updated = appointments.map((a) => (a.id === id ? { ...a, status } : a));
-    setAppointments(updated);
-    setStorage("appointments", updated);
-    window.dispatchEvent(new Event("appointments-updated"));
-  };
-
-  const handleDeleteAppointment = (id) => {
-    const updated = appointments.filter((a) => a.id !== id);
-    setAppointments(updated);
-    setStorage("appointments", updated);
-    window.dispatchEvent(new Event("appointments-updated"));
-  };
-
   const todayAppointments = getLast24Hours(appointments);
 
   return (
@@ -167,29 +144,15 @@ const Dashboard = () => {
                   <EmptyState message="No appointments available" />
                 ) : (
                   todayAppointments.map((item) => (
-                    <AppointmentRow key={item.id} item={item} onUpdateStatus={updateStatus} />
+                    <AppointmentRow key={item.id} item={item} />
                   ))
                 )}
               </div>
-
-              <button
-                onClick={() => setShowAppointmentsModal(true)}
-                className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg py-2.5 text-sm hover:bg-gray-50 transition"
-              >
-                <Calendar size={16} strokeWidth={1.5} />
-                View All Appointments
-              </button>
             </div>
 
             <div className="bg-white p-5 rounded-xl shadow-sm flex flex-col h-[480px]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-base font-semibold">Doctors</h2>
-                <button
-                  onClick={() => setActivePage("staff-all")}
-                  className="text-sm text-gray-500 hover:text-black transition"
-                >
-                  View All
-                </button>
               </div>
 
               <div className="flex-1 overflow-y-auto pr-1">
@@ -217,14 +180,6 @@ const Dashboard = () => {
                   ))
                 )}
               </div>
-
-              <button
-                onClick={() => setActivePage("patients")}
-                className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg py-2.5 text-sm hover:bg-gray-50 transition"
-              >
-                <Users size={16} strokeWidth={1.5} />
-                View All Patients
-              </button>
             </div>
 
             <div className="bg-white p-5 rounded-xl shadow-sm flex flex-col h-[400px]">
@@ -261,63 +216,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* ── FLOATING ACTION BUTTONS ── */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-          <div className={`mx-auto flex justify-center gap-6 p-6 pointer-events-auto ${collapsed ? "ml-20" : "ml-64"}`}>
-            <button
-              onClick={() => setActivePage("patients")}
-              className="bg-black text-white py-4 px-12 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition shadow-lg min-w-[280px]"
-            >
-              <UserPlus size={20} strokeWidth={1.5} />
-              <span className="font-medium text-sm">Add New Patient</span>
-            </button>
-            <button
-              onClick={() => setShowAppointmentsModal(true)}
-              className="bg-white border border-gray-300 py-4 px-12 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-lg min-w-[280px]"
-            >
-              <CalendarPlus size={20} strokeWidth={1.5} />
-              <span className="font-medium text-sm">Schedule Appointment</span>
-            </button>
-          </div>
-        </div>
       </div>
-
-      {/* ── ALL APPOINTMENTS MODAL ── */}
-      {showAppointmentsModal && (
-        <Modal onClose={() => setShowAppointmentsModal(false)} title="All Appointments">
-          {appointments.length === 0 ? (
-            <EmptyState message="No appointments found" />
-          ) : (
-            appointments.map((item) => (
-              <div
-                key={item.id}
-                className="border-b py-3 flex justify-between items-center hover:bg-gray-50 px-2 rounded transition"
-              >
-                <div>
-                  <p className="font-medium text-sm">{item.patient}</p>
-                  <p className="text-sm text-gray-500">{item.reason}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={item.status} />
-                  <button
-                    onClick={() => updateStatus(item.id, "Confirmed")}
-                    className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAppointment(item.id)}
-                    className="text-xs px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </Modal>
-      )}
     </div>
   );
 };
@@ -351,7 +250,7 @@ const StatusBadge = ({ status }) => (
   </span>
 );
 
-const AppointmentRow = ({ item, onUpdateStatus }) => (
+const AppointmentRow = ({ item }) => (
   <div className="flex justify-between items-center border-b py-3 hover:bg-gray-50 px-2 rounded transition">
     <div className="flex items-center gap-3">
       <Avatar name={item.patient} />
@@ -363,12 +262,6 @@ const AppointmentRow = ({ item, onUpdateStatus }) => (
     <div className="flex items-center gap-3">
       <p className="text-sm font-medium text-gray-700">{item.time}</p>
       <StatusBadge status={item.status} />
-      <button
-        onClick={() => onUpdateStatus(item.id, item.status === "Confirmed" ? "Pending" : "Confirmed")}
-        className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
-      >
-        {item.status === "Confirmed" ? "Set Pending" : "Confirm"}
-      </button>
     </div>
   </div>
 );
@@ -431,20 +324,6 @@ const DepartmentCard = ({ department }) => (
 const Avatar = ({ name, color = "bg-gray-200 text-gray-600" }) => (
   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${color}`}>
     {name?.charAt(0)?.toUpperCase() || "P"}
-  </div>
-);
-
-const Modal = ({ children, onClose, title }) => (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl w-[700px] max-h-[80vh] overflow-hidden flex flex-col">
-      <div className="flex justify-between items-center p-5 border-b border-gray-200">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <button onClick={onClose} className="hover:bg-gray-100 p-1.5 rounded transition">
-          <X size={18} strokeWidth={1.5} />
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-5">{children}</div>
-    </div>
   </div>
 );
 
