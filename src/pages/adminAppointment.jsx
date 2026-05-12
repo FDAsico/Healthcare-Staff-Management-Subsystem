@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../components/adminSidebar";
 import { Calendar, CheckCircle, Stethoscope, Briefcase } from "lucide-react";
 
 const Appointment = () => {

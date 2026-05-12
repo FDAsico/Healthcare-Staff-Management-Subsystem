@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "./components/adminSidebar";
 import AdminDashboard from "./pages/adminDashboard";
 import AdminPatients from "./pages/adminPatient";
 import AdminAppointment from "./pages/adminAppointment";
