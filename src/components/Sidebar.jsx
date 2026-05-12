@@ -70,25 +70,10 @@ const Sidebar = () => {
   }, [collapsed]);
 
   useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      navigate("/login");
-      return;
-    }
-
-    const validPaths = menuItems.flatMap((item) =>
-      item.submenu ? item.submenu.map((s) => s.path) : [item.path]
-    );
-
-    if (!validPaths.includes(location.pathname)) {
-      navigate("/");
-      return;
-    }
-
     const newState = getActiveStateFromPath(location.pathname);
     setActiveState(newState);
     setOpenMenus(newState.open);
-  }, [location.pathname, navigate]);
+  }, [location.pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {

@@ -54,34 +54,43 @@ export function AuthProvider({ children }) {
   }
 
   async function login(username, password) {
-    const res = await api.post("/auth/login", { username, password });
-    const payload = res.data?.data || res.data;
-    const accessToken =
-      payload?.accessToken ||
-      payload?.token ||
-      payload?.access_token ||
-      payload?.authToken;
-    const loginUser = payload?.user || payload?.me || payload?.userData;
-    const loginStaffProfile =
-      payload?.staffProfile ||
-      payload?.profile ||
-      payload?.userProfile;
+    try {
+      const res = await api.post("/auth/login", { username, password });
+      const payload = res.data?.data || res.data;
+      const accessToken =
+        payload?.accessToken ||
+        payload?.token ||
+        payload?.access_token ||
+        payload?.authToken;
+      const loginUser = payload?.user || payload?.me || payload?.userData;
+      const loginStaffProfile =
+        payload?.staffProfile ||
+        payload?.profile ||
+        payload?.userProfile;
 
-    if (!accessToken) {
-      throw new Error("Invalid login response: missing access token.");
-    }
+      if (!accessToken) {
+        throw new Error("Invalid login response: missing access token.");
+      }
 
-    localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("accessToken", accessToken);
 
-    if (loginUser) {
-      setUser(loginUser);
-    }
-    if (loginStaffProfile) {
-      setStaffProfile(loginStaffProfile);
-    }
+      if (loginUser) {
+        setUser(loginUser);
+      }
+      if (loginStaffProfile) {
+        setStaffProfile(loginStaffProfile);
+      }
 
-    if (!loginUser) {
-      await fetchMe();
+      if (!loginUser) {
+        await fetchMe();
+      }
+    } catch (error) {
+      // Re-throw the error with the backend message so login.jsx can display it
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed. Please check your credentials.";
+      throw new Error(message);
     }
   }
 
@@ -92,8 +101,28 @@ export function AuthProvider({ children }) {
     navigate("/login", { replace: true });
   }
 
+  // Role checking helpers
+  const role = user?.role?.toUpperCase() || null;
+  const isAdmin = role === "ADMIN";
+  const isDoctor = role === "DOCTOR";
+  const isNurse = role === "NURSE";
+  const isPharmacist = role === "PHARMACIST";
+  const isStaff = isDoctor || isNurse || isPharmacist;
+
   return (
-    <AuthContext.Provider value={{ user, staffProfile, login, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      staffProfile, 
+      login, 
+      logout, 
+      loading,
+      role,
+      isAdmin,
+      isDoctor,
+      isNurse,
+      isPharmacist,
+      isStaff
+    }}>
       {children}
     </AuthContext.Provider>
   );

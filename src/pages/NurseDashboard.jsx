@@ -15,10 +15,9 @@ const NurseDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
-  const [activities, setActivities] = useState([]);
 
   const getLast24HoursAppointments = (data) => {
     const now = Date.now();
