@@ -13,13 +13,13 @@ export const usePharmacyData = () => {
             try {
                 const response = await axios.get(`${API_BASE_URL}/name`);
                 setNames(response.data);
-             } catch (err) {
-                 console.error('Error fetching medicines:', err);
-                 setError(err.message || 'Failed to load medicines');
-             } finally {
-                 setLoading(false);
-             }
-         };
+            } catch (err) {
+                console.error('Error fetching medicines:', err);
+                setError(err.message || 'Failed to load medicines');
+            } finally {
+                setLoading(false);
+            }
+        };
 
         fetchNames();
     }, []);
