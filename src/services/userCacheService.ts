@@ -1,5 +1,5 @@
 import { prisma } from "../db.js";
-import { mapAdminRoleName } from "../utils/roleMapper.js";
+import { mapAdminToUserRole } from "../utils/roleMapper.js";
 
 export async function cacheUserFromAdmin(adminUser: {
   user_id: string;
@@ -8,7 +8,7 @@ export async function cacheUserFromAdmin(adminUser: {
   status: string;
   email?: string;
 }) {
-  const userRole = mapAdminRoleName(adminUser.role);
+  const userRole = mapAdminToUserRole(adminUser.role);
 
   return prisma.user.upsert({
     where: { user_id: adminUser.user_id },

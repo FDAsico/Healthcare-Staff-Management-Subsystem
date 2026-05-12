@@ -11,13 +11,13 @@ export function mapAdminToUserRole(adminRoleName: string): string {
 }
 
 export function mapAdminToStaffRole(adminRoleName: string): string | null {
-  const map: Record<string, string> = {
+  const map: Record<string, string | null> = {
     "Doctor": "DOCTOR",
     "Nurse": "NURSE",
     "Pharmacist": "PHARMACIST",
     "Admin": "ADMIN",
     "Staff Management: Admin": "ADMIN",
-    "Staff Management: Staff": null || "",
+    "Staff Management: Staff": null,
   };
   return map[adminRoleName] || null;
 }
