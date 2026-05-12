@@ -7,11 +7,14 @@ import PharmaSidebar from './components/PharmaSidebar'
 
 const App = () => {
     return (
-        <div> 
-            <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/shift-schedule" element={<ShiftSchedule />} />
-            </Routes>
+        <div className="flex">
+            <PharmaSidebar />
+            <div className="flex-1 ml-64">
+                <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/shift-schedule" element={<ShiftSchedule />} />
+                </Routes>
+            </div>
         </div>
     );
 }

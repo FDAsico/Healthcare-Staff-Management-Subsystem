@@ -13,7 +13,8 @@ import {
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { name: "Staff Management", icon: Users, path: "/staff" },
+  { name: "Shift Schedule", icon: Calendar, path: "/shift-schedule" },
+  {Users, path: "/staff" },
 ];
 
 const PharmaSidebar = () => {
