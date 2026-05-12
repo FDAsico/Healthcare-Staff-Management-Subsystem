@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 
 const AuthContext = createContext(null);
@@ -7,9 +8,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [staffProfile, setStaffProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken") || import.meta.env.VITE_API_TOKEN;
     if (token) {
       fetchMe();
     } else {
@@ -17,13 +19,35 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setStaffProfile(null);
+      setLoading(false);
+    };
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
+
   async function fetchMe() {
+    setLoading(true);
     try {
       const res = await api.get("/auth/me");
-      setUser(res.data.user);
-      setStaffProfile(res.data.staffProfile);
+      const payload = res.data?.data || res.data;
+      const meUser = payload?.user || payload?.me || payload?.userData;
+      const meStaffProfile = payload?.staffProfile || payload?.profile;
+
+      if (meUser) {
+        setUser(meUser);
+      }
+      if (meStaffProfile) {
+        setStaffProfile(meStaffProfile);
+      }
     } catch {
       localStorage.removeItem("accessToken");
+      setUser(null);
+      setStaffProfile(null);
     } finally {
       setLoading(false);
     }
@@ -31,18 +55,41 @@ export function AuthProvider({ children }) {
 
   async function login(username, password) {
     const res = await api.post("/auth/login", { username, password });
-    const { accessToken, user, staffProfile } = res.data;
+    const payload = res.data?.data || res.data;
+    const accessToken =
+      payload?.accessToken ||
+      payload?.token ||
+      payload?.access_token ||
+      payload?.authToken;
+    const loginUser = payload?.user || payload?.me || payload?.userData;
+    const loginStaffProfile =
+      payload?.staffProfile ||
+      payload?.profile ||
+      payload?.userProfile;
+
+    if (!accessToken) {
+      throw new Error("Invalid login response: missing access token.");
+    }
 
     localStorage.setItem("accessToken", accessToken);
-    setUser(user);
-    setStaffProfile(staffProfile);
+
+    if (loginUser) {
+      setUser(loginUser);
+    }
+    if (loginStaffProfile) {
+      setStaffProfile(loginStaffProfile);
+    }
+
+    if (!loginUser) {
+      await fetchMe();
+    }
   }
 
   function logout() {
     localStorage.removeItem("accessToken");
     setUser(null);
     setStaffProfile(null);
-    window.location.href = "/login";
+    navigate("/login", { replace: true });
   }
 
   return (

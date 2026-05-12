@@ -1,6 +1,5 @@
-import { React, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Sidebar from "./components/adminSidebar";
+import { Navigate, Routes, Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import AdminDashboard from "./pages/adminDashboard";
 import AdminPatients from "./pages/adminPatient";
 import AdminAppointment from "./pages/adminAppointment";
@@ -10,76 +9,100 @@ import AdminMedicalRecords from "./pages/adminMedicalRecords";
 import AdminDepartments from "./pages/adminDepartments";
 import AdminStaff from "./pages/adminStaff";
 import AdminShift from "./pages/adminshift";
-import Login from './pages/Login'
+import Login from './pages/login'
 import Dashboard from './pages/Dashboard'
 import Patients from './pages/Patients'
 import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
 import MedicalRecord from './pages/MedicalRecord'
-import login from './pages/login'
 import ShiftSchedule from './pages/ShiftSchedule' 
 import NurseDashboard from './pages/NurseDashboard'
 import NursePatient from './pages/NursePatient'
-import NurseSidebar from './components/NurseSidebar'
 import NurseCalendar from './pages/NurseCalendar'
 import NurseMedicalRecord from './pages/NurseMedicalRecord'
 import NurseShiftSchedule from './pages/NurseShiftSchedule'
 
-
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState('');
+  const { user, loading } = useAuth();
+  const role = user?.role?.toLowerCase();
+  const isNurse = role === "nurse";
 
-  const handleLogin = (userData) => {
-    setIsAuthenticated(true);
-    setUserRole(localStorage.getItem('userRole') || 'Doctor');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    setIsAuthenticated(false);
-    setUserRole('');
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    );
+  }
 
   return (
-    <div>
-      <Routes>
-        <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        <Route path="/nurse-dashboard" element={<NurseDashboard />} />
-        <Route path="/nurse-patient" element={<NursePatient />} />
-        <Route path="/nurse-calendar" element={<NurseCalendar />} />
-        <Route path="/nurse-medical-record" element={<NurseMedicalRecord />} />
-        <Route path="/nurse-shift-schedule" element={<NurseShiftSchedule />} />
-          
-          <Route path="/" element={<AdminDashboard />} />
-            <Route path="/dashboard" element={<AdminDashboard />} />
-            <Route path="/patients" element={<AdminPatients />} />
-            <Route path="/appointments" element={<AdminAppointment />} />
-            <Route path="/appointments/all" element={<AdminAppointment />} />
-            <Route path="/appointments/calendar" element={<AdminCalendarView />} />
-            <Route path="/schedule-appointment" element={<AdminScheduleAppointment />} />
-            <Route path="/record" element={<AdminMedicalRecords />} />
-            <Route path="/staff/all" element={<AdminStaff />} />
-            <Route path="/staff/departments" element={<AdminDepartments />} />
-            <Route path="/staff/shifts" element={<AdminShift />} />
+    <Routes>
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <Login />}
+      />
 
-        {isAuthenticated ? (
-          <>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/patients" element={<Patients />} />
-            <Route path="/appointments" element={<Appointment />} />
-            <Route path="/appointments/all" element={<Appointment />} />
-            <Route path="/appointments/calendar" element={<CalendarView />} />
-            <Route path="/record" element={<MedicalRecord />} />
-            <Route path="/shift-schedule" element={<ShiftSchedule />} />
-          </>
-        ) : (
-          <Route path="/" element={<Login onLogin={handleLogin} />} />
-        )}
-      </Routes>
-    </div>
-  )
-}
+      <Route
+        path="/"
+        element={user ? (isNurse ? <NurseDashboard /> : <AdminDashboard />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/dashboard"
+        element={user ? (isNurse ? <NurseDashboard /> : <AdminDashboard />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/patients"
+        element={user ? (isNurse ? <NursePatient /> : <AdminPatients />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/appointments"
+        element={user ? (isNurse ? <Appointment /> : <AdminAppointment />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/appointments/all"
+        element={user ? (isNurse ? <Appointment /> : <AdminAppointment />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/appointments/calendar"
+        element={user ? (isNurse ? <CalendarView /> : <AdminCalendarView />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/schedule-appointment"
+        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminScheduleAppointment />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/record"
+        element={user ? (isNurse ? <MedicalRecord /> : <AdminMedicalRecords />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/staff/all"
+        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminStaff />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/staff/departments"
+        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminDepartments />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/staff/shifts"
+        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminShift />) : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/shift-schedule"
+        element={user ? (isNurse ? <NurseShiftSchedule /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
+      />
+
+      <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+    </Routes>
+  );
+};
 
 export default App;

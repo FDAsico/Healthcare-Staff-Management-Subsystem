@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -14,11 +16,10 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (user) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   const validate = () => {
     const newErrors = {};
@@ -50,15 +51,24 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    
+
     setIsLoading(true);
-    
-    setTimeout(() => {
-      localStorage.setItem('token', 'mock-token-123');
+    setErrors((prev) => ({ ...prev, submit: '' }));
+
+    try {
+      await login(formData.username, formData.password);
+      navigate('/', { replace: true });
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        submit:
+          error.response?.data?.message ||
+          error.message ||
+          'Login failed. Please check your credentials.',
+      }));
+    } finally {
       setIsLoading(false);
-      onLogin?.({ username: formData.username });
-      navigate('/');
-    }, 1000);
+    }
   };
 
   return (

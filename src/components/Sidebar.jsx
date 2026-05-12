@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -69,8 +70,8 @@ const Sidebar = () => {
   }, [collapsed]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
       navigate("/login");
       return;
     }
@@ -127,9 +128,10 @@ const Sidebar = () => {
     if (sub.path) navigate(sub.path);
   };
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    logout();
   };
 
   const isMainActive = (name) => activeState.main === name;

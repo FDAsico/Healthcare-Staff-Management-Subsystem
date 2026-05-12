@@ -7,11 +7,16 @@ const api = axios.create({
   },
 });
 
+const envToken = import.meta.env.VITE_API_TOKEN;
+
 // Attach JWT to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("accessToken") || envToken;
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`,
+    };
   }
   return config;
 });
@@ -22,7 +27,7 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem("accessToken");
-      window.location.href = "/login";
+      window.dispatchEvent(new Event("auth:unauthorized"));
     }
     return Promise.reject(err);
   }
