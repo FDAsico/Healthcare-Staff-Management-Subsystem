@@ -51,17 +51,20 @@ export async function me(req: Request, res: Response) {
     if (!req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
+
     const user = await prisma.user.findUnique({
       where: { user_id: req.user.userId },
       select: {
         user_id: true,
         username: true,
         email: true,
-        role: true,
+        role: true, 
         isActive: true,
       },
     });
+
     if (!user) return res.status(404).json({ message: "User not found" });
+
     const staff = await prisma.staff.findUnique({
       where: { user_id: user.user_id },
       select: {
@@ -73,11 +76,17 @@ export async function me(req: Request, res: Response) {
         status: true,
       },
     });
-    res.json({ user, staffProfile: staff });
+
+    res.json({
+      user,
+      staffProfile: staff,
+      effectiveRole: staff?.role || user.role,
+    });
   } catch (error) {
     res.status(500).json({ message: error instanceof Error ? error.message : "Error" });
   }
 }
+
 export async function logout(req: Request, res: Response) {
   res.json({ message: "Logged out successfully" });
 }

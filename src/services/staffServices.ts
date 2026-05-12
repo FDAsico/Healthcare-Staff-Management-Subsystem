@@ -85,6 +85,12 @@ export async function create(data: Record<string, unknown>) {
     },
   });
 
+  await prisma.user.update({
+    where: { user_id: adminUser.user_id },
+    data: { role: staff.role },
+  });
+
+
   try {
     await patchStaffIdToAdmin(adminUser.user_id, staff.staff_id);
   } catch (err) {
