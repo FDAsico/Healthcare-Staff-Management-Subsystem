@@ -8,6 +8,8 @@ import availabilityRoutes from "./availabilityRoutes.js";
 import documentRoutes from "./documentRoutes.js";
 import emergencyContactRoutes from "./emergencyContactRoutes.js";
 import auditLogRoutes from "./auditLogRoutes.js";
+import patientProxyRoutes from "./patientProxyRoutes.js";      // NEW
+import inventoryProxyRoutes from "./inventoryProxyRoutes.js";  // NEW
 
 const router = Router();
 
@@ -20,5 +22,7 @@ router.use("/availability", availabilityRoutes);
 router.use("/documents", documentRoutes);
 router.use("/emergency-contacts", emergencyContactRoutes);
 router.use("/audit-logs", auditLogRoutes);
+router.use("/patient-proxy", patientProxyRoutes);
+router.use("/inventory-proxy", inventoryProxyRoutes);
 
 export default router;
