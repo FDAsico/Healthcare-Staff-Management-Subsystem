@@ -26,10 +26,7 @@ const getStorage = (key, fallback = []) => {
 };
 
 const getAuthToken = () => {
-  return localStorage.getItem("token")
-    || localStorage.getItem("authToken")
-    || localStorage.getItem("accessToken")
-    || "";
+  return localStorage.getItem("accessToken") || "";
 };
 
 function Departments() {
