@@ -111,9 +111,7 @@ const ScheduleAppointment = ({ onSave }) => {
 
       {open && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-
           <div className="bg-white rounded-2xl shadow-2xl w-[850px] overflow-hidden">
-
             <div className="bg-black text-white px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Calendar size={20} />
@@ -129,7 +127,6 @@ const ScheduleAppointment = ({ onSave }) => {
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
               <div>
                 <label className="text-sm font-medium">Date *</label>
                 <input
@@ -239,11 +236,9 @@ const ScheduleAppointment = ({ onSave }) => {
                   className={inputClass}
                 />
               </div>
-
             </div>
 
             <div className="px-6 py-4 flex justify-between items-center">
-
               <div>
                 {showAlert && (
                   <p className="text-red-500 text-xs">
@@ -267,9 +262,7 @@ const ScheduleAppointment = ({ onSave }) => {
                   Save
                 </button>
               </div>
-
             </div>
-
           </div>
         </div>
       )}

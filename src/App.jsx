@@ -11,98 +11,230 @@ import AdminStaff from "./pages/adminStaff";
 import AdminShift from "./pages/adminshift";
 import Login from './pages/login'
 import Dashboard from './pages/Dashboard'
-import Patients from './pages/Patients'
 import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
 import MedicalRecord from './pages/MedicalRecord'
-import ShiftSchedule from './pages/ShiftSchedule' 
 import NurseDashboard from './pages/NurseDashboard'
 import NursePatient from './pages/NursePatient'
-import NurseCalendar from './pages/NurseCalendar'
-import NurseMedicalRecord from './pages/NurseMedicalRecord'
 import NurseShiftSchedule from './pages/NurseShiftSchedule'
 
-const App = () => {
+// Component to check auth and render children or redirect
+function RequireAuth({ children }) {
   const { user, loading } = useAuth();
-  const role = user?.role?.toLowerCase();
-  const isNurse = role === "nurse";
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+}
+
+// Component to check role and render children or redirect
+function RequireRole({ allowedRoles, children }) {
+  const { role } = useAuth();
+  
+  if (!role || !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+}
+
+function App() {
+  const { user, loading, isAdmin, isDoctor, isNurse, isPharmacist } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">Loading...</div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  // Dashboard component selector
+  let DashboardComponent;
+  if (isNurse) {
+    DashboardComponent = NurseDashboard;
+  } else if (isPharmacist) {
+    DashboardComponent = NurseDashboard; // Placeholder
+  } else if (isDoctor) {
+    DashboardComponent = Dashboard; // Using AdminDashboard for now
+  } else if (isAdmin) {
+    DashboardComponent = AdminDashboard;
+  }
+
+  // Patients component selector
+  let PatientsComponent;
+  if (isNurse) {
+    PatientsComponent = NursePatient;
+  } else if (isDoctor || isAdmin) {
+    PatientsComponent = AdminPatients;
+  }
+
+  // Appointments component selector
+  let AppointmentsComponent;
+  if (isAdmin) {
+    AppointmentsComponent = AdminAppointment;
+  } else if (isDoctor || isNurse || isPharmacist) {
+    AppointmentsComponent = Appointment;
+  }
+
+  // Records component selector
+  let RecordsComponent;
+  if (isAdmin) {
+    RecordsComponent = AdminMedicalRecords;
+  } else if (isDoctor || isNurse) {
+    RecordsComponent = MedicalRecord;
+  }
+
+  // Calendar component selector
+  let CalendarComponent;
+  if (isAdmin) {
+    CalendarComponent = AdminCalendarView;
+  } else if (isDoctor || isNurse || isPharmacist) {
+    CalendarComponent = CalendarView;
   }
 
   return (
     <Routes>
+      {/* Public Routes */}
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login />}
       />
 
+      {/* Protected Routes */}
       <Route
         path="/"
-        element={user ? (isNurse ? <NurseDashboard /> : <AdminDashboard />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/dashboard"
-        element={user ? (isNurse ? <NurseDashboard /> : <AdminDashboard />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/patients"
-        element={user ? (isNurse ? <NursePatient /> : <AdminPatients />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR", "NURSE"]}>
+              {PatientsComponent ? <PatientsComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/appointments"
-        element={user ? (isNurse ? <Appointment /> : <AdminAppointment />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR", "NURSE", "PHARMACIST"]}>
+              {AppointmentsComponent ? <AppointmentsComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/appointments/all"
-        element={user ? (isNurse ? <Appointment /> : <AdminAppointment />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR", "NURSE", "PHARMACIST"]}>
+              {AppointmentsComponent ? <AppointmentsComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/appointments/calendar"
-        element={user ? (isNurse ? <CalendarView /> : <AdminCalendarView />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR", "NURSE", "PHARMACIST"]}>
+              {CalendarComponent ? <CalendarComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/schedule-appointment"
-        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminScheduleAppointment />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR"]}>
+              <AdminScheduleAppointment />
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/record"
-        element={user ? (isNurse ? <MedicalRecord /> : <AdminMedicalRecords />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN", "DOCTOR", "NURSE"]}>
+              {RecordsComponent ? <RecordsComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/staff/all"
-        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminStaff />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN"]}>
+              <AdminStaff />
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/staff/departments"
-        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminDepartments />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN"]}>
+              <AdminDepartments />
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/staff/shifts"
-        element={user ? (isNurse ? <Navigate to="/" replace /> : <AdminShift />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["ADMIN"]}>
+              <AdminShift />
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route
         path="/shift-schedule"
-        element={user ? (isNurse ? <NurseShiftSchedule /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE", "PHARMACIST"]}>
+              <NurseShiftSchedule />
+            </RequireRole>
+          </RequireAuth>
+        }
       />
 
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
     </Routes>
   );
-};
+}
 
 export default App;
