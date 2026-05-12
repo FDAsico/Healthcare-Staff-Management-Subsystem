@@ -1,6 +1,6 @@
 import { prisma } from "../db.js";
 import { getStaffUsersFromAdmin, patchStaffIdToAdmin } from "../clients/adminClient.js";
-import { mapAdminRoleName } from "../utils/roleMapper.js";
+import { mapAdminToUserRole } from "../utils/roleMapper.js";
 
 export async function getAll(query: Record<string, unknown>) {
   const page = Number(query.page) || 1;
@@ -60,7 +60,7 @@ export async function create(data: Record<string, unknown>) {
     where: { user_id: adminUser.user_id },
     update: {
       username: adminUser.username,
-      role: mapAdminRoleName(adminUser.Role.name),
+      role: mapAdminToUserRole(adminUser.Role.name),
       isActive: adminUser.status === "active",
     },
     create: {
@@ -68,7 +68,7 @@ export async function create(data: Record<string, unknown>) {
       username: adminUser.username,
       email: `${adminUser.username}@hospital.com`, // fallback
       passwordHash: "managed-by-admin",
-      role: mapAdminRoleName(adminUser.Role.name),
+      role: mapAdminToUserRole(adminUser.Role.name),
       isActive: adminUser.status === "active",
     },
   });

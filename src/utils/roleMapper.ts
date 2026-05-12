@@ -17,7 +17,7 @@ export function mapAdminToStaffRole(adminRoleName: string): string | null {
     "Pharmacist": "PHARMACIST",
     "Admin": "ADMIN",
     "Staff Management: Admin": "ADMIN",
-    "Staff Management: Staff": null,
+    "Staff Management: Staff": null || "",
   };
   return map[adminRoleName] || null;
 }
