@@ -2,22 +2,28 @@ import { Request, Response } from "express";
 import { subsystemLogin } from "../../../clients/adminClient.js";
 import { cacheUserFromAdmin } from "../../../services/userCacheService.js";
 import { generateAccessToken } from "../../../utils/auth.js";
+import { mapAdminToStaffRole } from "../../../utils/roleMapper.js";
 import { prisma } from "../../../db.js";
 
 export async function login(req: Request, res: Response) {
   try {
     const { username, password } = req.body;
+
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password required" });
     }
+
     const adminAuth = await subsystemLogin(username, password);
+
     const localUser = await cacheUserFromAdmin({
       user_id: adminAuth.user.user_id,
       username: adminAuth.user.username,
       role: adminAuth.user.role,
       status: adminAuth.user.status,
     });
+
     const accessToken = generateAccessToken(localUser.user_id, localUser.role);
+
     const staff = await prisma.staff.findUnique({
       where: { user_id: localUser.user_id },
       select: {
@@ -28,6 +34,9 @@ export async function login(req: Request, res: Response) {
         status: true,
       },
     });
+
+    const suggestedStaffRole = mapAdminToStaffRole(adminAuth.user.role);
+
     res.json({
       message: "Login successful",
       accessToken,
@@ -35,9 +44,11 @@ export async function login(req: Request, res: Response) {
         user_id: localUser.user_id,
         username: localUser.username,
         email: localUser.email,
-        role: localUser.role,
+        role: staff?.role || suggestedStaffRole || "STAFF",
+        accessRole: localUser.role,
       },
       staffProfile: staff,
+      needsOnboarding: !staff,
     });
   } catch (error) {
     res.status(401).json({
@@ -58,7 +69,7 @@ export async function me(req: Request, res: Response) {
         user_id: true,
         username: true,
         email: true,
-        role: true, 
+        role: true,
         isActive: true,
       },
     });
@@ -78,9 +89,12 @@ export async function me(req: Request, res: Response) {
     });
 
     res.json({
-      user,
+      user: {
+        ...user,
+        displayRole: staff?.role || user.role,
+      },
       staffProfile: staff,
-      effectiveRole: staff?.role || user.role,
+      needsOnboarding: !staff,
     });
   } catch (error) {
     res.status(500).json({ message: error instanceof Error ? error.message : "Error" });
