@@ -53,7 +53,7 @@ steps:
       - '--min-instances'
       - '0'
       - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,ADMIN_SUBSYSTEM_KEY=ADMIN_SUBSYSTEM_KEY:latest,ADMIN_SUBSYSTEM_URL=ADMIN_SUBSYSTEM_URL:latest,INVENTORY_API_KEY=INVENTORY_API_KEY:latest,PMS_API_KEY=PMS_API_KEY:latest'
+      - 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,ADMIN_SUBSYSTEM_KEY=admin_subsystem_key:latest,ADMIN_SUBSYSTEM_URL=admin_subsystem_url:latest,INVENTORY_API_KEY=inventory_api_key:latest,PMS_API_KEY=pms_api_key:latest,PMS_BASE_URL=pms_base_url:latest,PMS_APPOINTMENTS_API_KEY=pms_appointments_api_key:latest,PMS_HEALTH_RECORDS_API_KEY=pms_health_records_api_key:latest,INVENTORY_SUB_BASE_URL=inventroy_sub_base_url:latest,INVENTORY_SUB_API_KEY=inventroy_sub_api_key:latest'
       - '--set-env-vars'
       - 'NODE_ENV=production'
       - '--service-account'
