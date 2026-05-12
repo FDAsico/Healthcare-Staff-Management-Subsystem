@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -12,12 +13,22 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/pharma-dashboard" },
-  { name: "Shift Schedule", icon: Calendar, path: "/shift-schedule" },
-  {Users, path: "/staff" },
+  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+  { name: "Patients", icon: Users, path: "/patients" },
+  {
+    name: "Appointments",
+    icon: Calendar,
+    path: "/appointments",
+    submenu: [
+      { name: "All Appointments", path: "/appointments/all" },
+      { name: "Calendar View", path: "/appointments/calendar" },
+    ],
+  },
+  { name: "Medical Records", icon: FileText, path: "/record" },
+  { name: "Shift Schedule", icon: UserCog, path: "/shift-schedule" },
 ];
 
-const PharmaSidebar = () => {
+const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,10 +70,25 @@ const PharmaSidebar = () => {
   }, [collapsed]);
 
   useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      navigate("/login");
+      return;
+    }
+
+    const validPaths = menuItems.flatMap((item) =>
+      item.submenu ? item.submenu.map((s) => s.path) : [item.path]
+    );
+
+    if (!validPaths.includes(location.pathname)) {
+      navigate("/");
+      return;
+    }
+
     const newState = getActiveStateFromPath(location.pathname);
     setActiveState(newState);
     setOpenMenus(newState.open);
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -102,9 +128,10 @@ const PharmaSidebar = () => {
     if (sub.path) navigate(sub.path);
   };
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
+    logout();
   };
 
   const isMainActive = (name) => activeState.main === name;
@@ -122,7 +149,9 @@ const PharmaSidebar = () => {
         {!collapsed && (
           <div className="p-4">
             <h1 className="text-lg font-bold text-black">Smart Health</h1>
-            <p className="text-xs text-black opacity-60">Predictive Care System</p>
+            <p className="text-xs text-black opacity-60">
+              Predictive Care System
+            </p>
             <div className="mt-3 h-px w-full bg-gray-300/50" />
           </div>
         )}
@@ -143,7 +172,9 @@ const PharmaSidebar = () => {
                 <div className="flex items-center gap-3">
                   {item.icon && <item.icon size={22} />}
                   {!collapsed && (
-                    <span className="text-[15px] font-semibold">{item.name}</span>
+                    <span className="text-[15px] font-semibold">
+                      {item.name}
+                    </span>
                   )}
                 </div>
 
@@ -190,7 +221,9 @@ const PharmaSidebar = () => {
         >
           <Menu size={22} />
           {!collapsed && (
-            <span className="text-[15px] font-semibold text-black">Collapse</span>
+            <span className="text-[15px] font-semibold text-black">
+              Collapse
+            </span>
           )}
         </button>
 
@@ -208,4 +241,4 @@ const PharmaSidebar = () => {
   );
 };
 
-export default PharmaSidebar;
+export default Sidebar;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -12,12 +13,31 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/pharma-dashboard" },
-  { name: "Shift Schedule", icon: Calendar, path: "/shift-schedule" },
-  {Users, path: "/staff" },
+  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+  { name: "Patients", icon: Users, path: "/patients" },
+  {
+    name: "Appointments",
+    icon: Calendar,
+    path: "/appointments",
+    submenu: [
+      { name: "All Appointments", path: "/appointments/all" },
+      { name: "Calendar View", path: "/appointments/calendar" },
+    ],
+  },
+  { name: "Medical Records", icon: FileText, path: "/record" },
+  {
+    name: "Staff",
+    icon: UserCog,
+    path: "/staff",
+    submenu: [
+      { name: "All Staff", path: "/staff/all" },
+      { name: "Departments", path: "/staff/departments" },
+      { name: "Shift Management", path: "/staff/shifts" },
+    ],
+  },
 ];
 
-const PharmaSidebar = () => {
+const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,6 +63,14 @@ const PharmaSidebar = () => {
       }
     });
 
+    menuItems.forEach((item) => {
+      if (item.submenu && !main && !sub) {
+        if (path.startsWith(item.path) && item.path !== "/") {
+          open.push(item.name);
+        }
+      }
+    });
+
     return { main: sub ? null : main, sub, open };
   };
 
@@ -61,7 +89,10 @@ const PharmaSidebar = () => {
   useEffect(() => {
     const newState = getActiveStateFromPath(location.pathname);
     setActiveState(newState);
-    setOpenMenus(newState.open);
+    setOpenMenus((prev) => {
+      const combined = [...new Set([...prev, ...newState.open])];
+      return combined;
+    });
   }, [location.pathname]);
 
   const toggleCollapsed = () => {
@@ -93,18 +124,19 @@ const PharmaSidebar = () => {
     }
   };
 
-  const handleSubClick = (sub) => {
+  const handleSubClick = (sub, parentName) => {
     setActiveState({
       main: null,
       sub: sub.name,
-      open: activeState.open,
+      open: [...new Set([...activeState.open, parentName])],
     });
     if (sub.path) navigate(sub.path);
   };
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
+    logout();
   };
 
   const isMainActive = (name) => activeState.main === name;
@@ -114,43 +146,47 @@ const PharmaSidebar = () => {
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-300/20 z-50 flex flex-col transition-all duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
       <div>
         {!collapsed && (
-          <div className="p-4">
-            <h1 className="text-lg font-bold text-black">Smart Health</h1>
-            <p className="text-xs text-black opacity-60">Predictive Care System</p>
-            <div className="mt-3 h-px w-full bg-gray-300/50" />
+          <div className="p-5">
+            <h1 className="text-lg font-bold text-black">Smart Health Care</h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Predictive Care System
+            </p>
+            <div className="mt-4 h-px w-full bg-gray-200" />
           </div>
         )}
 
-        <div className="mt-2 flex flex-col gap-1">
+        <div className="mt-2 flex flex-col gap-0.5 px-2">
           {menuItems.map((item) => (
             <div key={item.name}>
               <div
                 onClick={() => handleMainClick(item)}
-                className={`flex items-center justify-between px-4 py-3 mx-2 rounded-lg cursor-pointer transition ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition ${
                   isMainActive(item.name)
                     ? "bg-black text-white"
                     : isParentActive(item.submenu)
-                    ? "bg-gray-200 text-black"
-                    : "text-black hover:bg-gray-100"
+                    ? "bg-gray-100 text-black"
+                    : "text-black hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {item.icon && <item.icon size={22} />}
+                  {item.icon && <item.icon size={20} strokeWidth={1.5} />}
                   {!collapsed && (
-                    <span className="text-[15px] font-semibold">{item.name}</span>
+                    <span className="text-sm font-medium">
+                      {item.name}
+                    </span>
                   )}
                 </div>
 
                 {!collapsed && item.submenu && (
                   <ChevronDown
-                    size={16}
-                    className={`transition-transform ${
+                    size={14}
+                    className={`transition-transform duration-200 ${
                       isOpen(item.name) ? "rotate-180" : ""
                     }`}
                   />
@@ -159,18 +195,18 @@ const PharmaSidebar = () => {
 
               {item.submenu && !collapsed && (
                 <div
-                  className={`ml-10 mt-1 flex flex-col gap-1 overflow-hidden transition-all duration-300 ${
-                    isOpen(item.name) ? "max-h-40" : "max-h-0"
+                  className={`ml-9 mt-0.5 flex flex-col gap-0.5 overflow-hidden transition-all duration-300 ${
+                    isOpen(item.name) ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
                   {item.submenu.map((sub) => (
                     <div
                       key={sub.name}
-                      onClick={() => handleSubClick(sub)}
-                      className={`px-2 py-1.5 rounded-md cursor-pointer text-[14px] font-semibold transition ${
+                      onClick={() => handleSubClick(sub, item.name)}
+                      className={`px-3 py-2 rounded-md cursor-pointer text-[13px] font-medium transition ${
                         activeState.sub === sub.name
                           ? "bg-black text-white"
-                          : "text-black hover:bg-gray-100"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-black"
                       }`}
                     >
                       {sub.name}
@@ -183,24 +219,26 @@ const PharmaSidebar = () => {
         </div>
       </div>
 
-      <div className="p-4 mt-auto flex flex-col gap-2">
+      <div className="p-3 mt-auto flex flex-col gap-1">
         <button
           onClick={toggleCollapsed}
-          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-gray-100 transition"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-gray-100 transition text-sm"
         >
-          <Menu size={22} />
+          <Menu size={18} strokeWidth={1.5} />
           {!collapsed && (
-            <span className="text-[15px] font-semibold text-black">Collapse</span>
+            <span className="font-medium text-black">
+              Collapse
+            </span>
           )}
         </button>
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-red-100 transition text-black-600"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-red-50 transition text-sm text-red-600"
         >
-          <LogOut size={22} />
+          <LogOut size={18} strokeWidth={1.5} />
           {!collapsed && (
-            <span className="text-[15px] font-semibold">Logout</span>
+            <span className="font-medium">Logout</span>
           )}
         </button>
       </div>
@@ -208,4 +246,4 @@ const PharmaSidebar = () => {
   );
 };
 
-export default PharmaSidebar;
+export default Sidebar;

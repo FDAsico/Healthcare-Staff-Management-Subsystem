@@ -1,4 +1,15 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
+
+const formatTime = (time24) => {
+  const [hourStr, minute] = time24.split(":");
+  let hour = parseInt(hourStr, 10);
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+
+  return `${hour}:${minute} ${ampm}`;
+};
 
 const sunIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -22,7 +33,6 @@ const sunsetIcon = (
     <line x1="1" y1="18" x2="3" y2="18"/>
     <line x1="21" y1="18" x2="23" y2="18"/>
     <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/>
-    <line x1="23" y1="22" x2="1" y2="22"/>
     <polyline points="16 5 12 9 8 5"/>
   </svg>
 );
@@ -34,85 +44,97 @@ const moonIcon = (
 );
 
 const shifts = [
-  { id: "morning", label: "Morning Shift", time: "08:00 - 4:00",  icon: sunIcon    },
-  { id: "evening", label: "Evening Shift", time: "16:00 - 00:00", icon: sunsetIcon },
-  { id: "night",   label: "Night Shift",   time: "00:00 - 08:00", icon: moonIcon   },
+  {
+    id: "morning",
+    label: "Morning Shift",
+    time: `${formatTime("08:00")} - ${formatTime("16:00")}`,
+    icon: sunIcon,
+  },
+  {
+    id: "evening",
+    label: "Evening Shift",
+    time: `${formatTime("16:00")} - ${formatTime("00:00")}`,
+    icon: sunsetIcon,
+  },
+  {
+    id: "night",
+    label: "Night Shift",
+    time: `${formatTime("00:00")} - ${formatTime("08:00")}`,
+    icon: moonIcon,
+  },
 ];
 
-function ShiftSchedule({ role = "admin" }) {
-  const [schedules] = useState({ morning: [], evening: [], night: [] });
+const ShiftSchedule = () => {
+  const [collapsed, setCollapsed] = useState(
+    () => sessionStorage.getItem("sidebar-collapsed") === "true"
+  );
 
-  const handleAddShift = () => {
-    // placeholder — modal/page not yet created
-  };
+  const [schedules] = useState({
+    morning: [],
+    evening: [],
+    night: [],
+  });
+
+  useEffect(() => {
+    const syncSidebar = (event) => setCollapsed(event.detail);
+
+    window.addEventListener("sidebar-collapse", syncSidebar);
+
+    return () => window.removeEventListener("sidebar-collapse", syncSidebar);
+  }, []);
 
   return (
-    <div className="flex-1 bg-gray-50 min-h-screen p-4 sm:p-8">
+    <div className="bg-gray-100 min-h-screen flex">
+      <Sidebar />
 
-      {/* Page Title */}
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Shift</h1>
+      <div
+        className="flex-1 p-6 flex flex-col"
+        style={{ marginLeft: collapsed ? "85px" : "265px" }}
+      >
+        <h1 className="text-[24px] font-bold mb-6">Shift Schedule</h1>
 
-      {/* Subheader */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gray-800">Shift Schedule</p>
-          <p className="text-xs text-gray-400 mt-0.5">Manage staff shifts and schedules</p>
+        <div className="flex flex-col gap-4">
+          {shifts.map((shift) => (
+            <div
+              key={shift.id}
+              className="bg-white rounded-xl border border-gray-200"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
+                <span>{shift.icon}</span>
+
+                <span className="text-sm font-bold text-gray-800">
+                  {shift.label}
+                </span>
+
+                <span className="text-sm font-semibold text-gray-500 ml-2">
+                  {shift.time}
+                </span>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4">
+                {schedules[shift.id].length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-6 font-medium">
+                    No schedules yet.
+                  </p>
+                ) : (
+                  schedules[shift.id].map((s, i) => (
+                    <div
+                      key={i}
+                      className="py-3 border-b border-gray-50 last:border-0"
+                    >
+                      {s.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-
-        {/* Only admin can see Add Shift button */}
-        {role === "admin" && (
-          <button
-            onClick={handleAddShift}
-            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors w-fit"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add Shift
-          </button>
-        )}
       </div>
-
-      {/* Shift Sections */}
-      <div className="flex flex-col gap-4">
-        {shifts.map((shift) => (
-          <div key={shift.id} className="bg-white rounded-xl border border-gray-200">
-
-            {/* Section Header */}
-            <div className="flex items-center gap-2 px-4 sm:px-5 py-4 border-b border-gray-100">
-              <span className="flex items-center">{shift.icon}</span>
-              <span className="text-sm font-bold text-gray-800">{shift.label}</span>
-              <span className="text-xs text-gray-400 ml-1">{shift.time}</span>
-            </div>
-
-            {/* Section Body */}
-            <div className="px-4 sm:px-5 py-4">
-              {schedules[shift.id].length === 0 ? (
-                <p className="text-xs text-gray-300 text-center py-3">No schedules yet.</p>
-              ) : (
-                schedules[shift.id].map((s, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-1 sm:gap-0">
-                    <span className="text-sm font-medium text-gray-800">{s.name}</span>
-                    {s.role && <span className="text-xs text-gray-400">{s.role}</span>}
-                    {s.status && (
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                        s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                      }`}>
-                        {s.status}
-                      </span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-
-          </div>
-        ))}
-      </div>
-
     </div>
   );
-}
+};
 
 export default ShiftSchedule;

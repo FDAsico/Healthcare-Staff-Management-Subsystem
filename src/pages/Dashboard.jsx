@@ -1,136 +1,234 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
 
-const InventoryTable = ({ data, onSearch }) => {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(
-        () => localStorage.getItem('sidebar-collapsed') === 'true'
-    );
+import {
+Users,
+Calendar,
+Activity,
+AlertCircle,
+CheckCircle,
+X,
+Clock,
+} from "lucide-react";
 
-    useEffect(() => {
-        const handleSidebarCollapse = (event) => {
-            setSidebarCollapsed(event.detail);
-        };
+const Dashboard = () => {
+const [appointments, setAppointments] = useState([]);
+const [patients, setPatients] = useState([]);
 
-        window.addEventListener('sidebar-collapse', handleSidebarCollapse);
-        return () => window.removeEventListener('sidebar-collapse', handleSidebarCollapse);
-    }, []);
+const [collapsed, setCollapsed] = useState(false);
 
-    const sidebarWidth = sidebarCollapsed ? 80 : 256;
-    const contentWidth = `calc(100vw - ${sidebarWidth}px)`;
-    const contentMargin = sidebarCollapsed ? -176 : 0;
+const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
+const [activities, setActivities] = useState([]);
 
-    // Shared classes to keep the code clean
-    const inputClasses = "py-2 px-3 border border-[#e5e7eb] rounded-[6px] text-[0.9rem] focus:outline-none focus:border-[#007bff]";
-    const thClasses = "bg-[#f9fafb] py-3 px-4 text-[0.85rem] font-semibold text-[#4b5563] border-b border-[#e5e7eb]";
-    const tdClasses = "p-4 text-[0.9rem] text-[#1f2937] border-b border-[#f3f4f6]";
-
-    return (
-            <div
-                className="min-h-screen bg-[#f9fafb] p-8 transition-all duration-300"
-                style={{
-                    width: contentWidth,
-                    marginLeft: contentMargin,
-                    maxWidth: '100vw',
-                }}
-            >
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 mb-10">
-                    Good Day Pharmacist!
-                </h1>
-                <h2 className="text-xl font-semibold text-gray-800">
-                    Pharmacy
-                </h2>
-            </div>
-                
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-[1.1rem] font-bold text-[#111827] m-0">
-                            Total Products
-                        </h3>
-                        <span className="bg-[#f97316] text-white px-2 py-0.5 rounded-[6px] text-[0.75rem] font-bold">
-                            {data?.length || 0}
-                        </span>
-                    </div>
-
-                    <div className="flex gap-3 items-center">
-                        <div className="relative">
-                            <input 
-                                type="text" 
-                                placeholder="Search" 
-                                className="py-2 pl-3 pr-10 border border-[#e5e7eb] rounded-[8px] text-[0.85rem] text-[#6b7280] w-[240px] focus:outline-none focus:border-[#3b82f6] transition-colors"
-                                onChange={(e) => onSearch(e.target.value)} 
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </span>
-                        </div>
-                        
-                        <select className="py-2 px-3 border border-[#e5e7eb] rounded-[8px] text-[0.85rem] text-[#ffff] bg-black cursor-pointer focus:outline-none">
-                            <option>Sort By : Newest</option>
-                            <option>Sort By : Oldest</option>
-                            <option>Sort By : Stock</option>
-                        </select>
-                    </div>
-                </div>
-
-                <table className="w-full border-collapse text-left">
-                    <thead>
-                        <tr>
-                            <th className={thClasses}><input type="checkbox" className="cursor-pointer" /></th>
-                            <th className={thClasses}>ID ⇅</th>
-                            <th className={thClasses}>Product Name ⇅</th>
-                            <th className={thClasses}>Price</th>
-                            <th className={thClasses}>Stock ⇅</th>
-                            <th className={thClasses}>Description</th>
-                            <th className={thClasses}>Unit ⇅</th>
-                            <th className={thClasses}></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data?.map(product => (
-                            <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                                <td className={tdClasses}><input type="checkbox" className="cursor-pointer" /></td>
-                                <td className={tdClasses}>{product.id}</td>
-                                <td className={tdClasses + " font-medium"}>{product.productName}</td>
-                                <td className={tdClasses}>₱{product.price}</td>
-                                <td className={tdClasses}>{product.stock}</td>
-                                {/* desc-cell conversion: text-color + max-width + truncate */}
-                                <td className={`${tdClasses} text-[#6b7280] max-w-[300px] truncate`}>
-                                    {product.description}
-                                </td>
-                                <td className={tdClasses}>{product.unit}</td>
-                                <td className={`${tdClasses} cursor-pointer font-bold text-[#9ca3af] hover:text-[#111] text-center text-xl`}>
-                                    ⋮
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="flex justify-between items-center mt-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                        Showing 
-                        <select className="border border-gray-200 rounded p-1 outline-none">
-                            <option>10</option>
-                        </select>
-                        Results
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                        <button className="px-3 py-1 border border-gray-200 rounded-l-md hover:bg-gray-50">Prev</button>
-                        <button className="px-3 py-1 bg-blue-600 text-white border border-blue-600">1</button>
-                        <button className="px-3 py-1 border border-gray-200 hover:bg-gray-50">2</button>
-                        <button className="px-3 py-1 border border-gray-200 hover:bg-gray-50">3</button>
-                        <button className="px-3 py-1 border border-gray-200 rounded-r-md hover:bg-gray-50">Next</button>
-                    </div>
-                </div>
-            </div>
-          </div>
-    
-  );
-
+const getLast24HoursAppointments = (data) => {
+    const now = Date.now();
+        return data.filter((item) => {
+            if (!item.createdAt) return false;
+      return now - item.createdAt <= 24 * 60 * 60 * 1000;
+    });
 };
 
+useEffect(() => {
+    const handleSidebarCollapse = (event) => {
+    setCollapsed(event.detail);
+    };
 
-export default InventoryTable;
+    window.addEventListener("sidebar-collapse", handleSidebarCollapse);
+    return () => {
+    window.removeEventListener("sidebar-collapse", handleSidebarCollapse);
+    };
+}, []);
+
+const updateStatus = (id, status) => {
+    const updated = appointments.map((a) =>
+    a.id === id ? { ...a, status } : a
+    );
+    setAppointments(updated);
+};
+
+const handleDeleteAppointment = (id) => {
+    const updated = appointments.filter((a) => a.id !== id);
+    setAppointments(updated);
+};
+
+const todayAppointments = getLast24HoursAppointments(appointments);
+
+const activeCasesCount = todayAppointments.filter(
+    (item) => item.status === "Confirmed"
+).length;
+
+return (
+    <div className="bg-gray-100 min-h-screen flex">
+    <Sidebar />
+
+    <div
+        className={`flex-1 p-6 transition-all duration-300 ${
+        collapsed ? "ml-[85px]" : "ml-[265px]"
+        }`}
+    >
+        <h1 className="text-[20px] font-bold mb-6">Good Day Doctor!</h1>
+
+        <div className="grid grid-cols-4 gap-4 mb-6">
+        <Card title="Total Patients" icon={<Users />} value={patients.length} iconColor="text-blue-500" />
+        <Card title="Today's Appointments" icon={<Calendar />} value={todayAppointments.length} iconColor="text-green-500" />
+        <Card title="Active Cases" icon={<Activity />} value={activeCasesCount} iconColor="text-orange-500" />
+        <Card title="Critical Alerts" icon={<AlertCircle />} value="0" iconColor="text-red-500" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="col-span-2 bg-white p-5 rounded-xl shadow-sm flex flex-col h-170">
+            <h2 className="text-lg font-semibold mb-4">Today's Appointments</h2>
+
+            <p className="text-sm text-gray-500 mb-3">
+            You have {todayAppointments.length} appointment
+            {todayAppointments.length !== 1 ? "s" : ""} in the last 24 hours
+            </p>
+
+            <div className="flex-1 overflow-y-auto">
+            {todayAppointments.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                <p className="text-gray-400 text-lg font-medium">
+                    No appointments available
+                </p>
+                </div>
+            ) : (
+                todayAppointments.map((item) => (
+                <div
+                    key={item.id}
+                    className="flex justify-between items-center border-b py-3"
+                >
+                    <div>
+                    <p className="font-medium">{item.patient}</p>
+                    <p className="text-sm text-gray-500">{item.reason}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium">{item.time}</p>
+
+                    <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                        item.status === "Confirmed"
+                            ? "bg-green-100 text-green-600"
+                            : "bg-yellow-100 text-yellow-600"
+                        }`}
+                    >
+                        {item.status || "Pending"}
+                    </span>
+
+                    <button
+                        onClick={() =>
+                        updateStatus(
+                            item.id,
+                            item.status === "Confirmed" ? "Pending" : "Confirmed"
+                        )
+                        }
+                        className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-100"
+                    >
+                        {item.status === "Confirmed"
+                        ? "Set Pending"
+                        : "Confirm"}
+                    </button>
+                    </div>
+                </div>
+                ))
+            )}
+            </div>
+
+            <button
+            onClick={() => setShowAppointmentsModal(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-100"
+            >
+            <Calendar size={16} />
+            View All Appointments
+            </button>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl shadow-sm flex flex-col h-[480px]">
+            <h2 className="text-lg font-semibold mb-4">Recent Activities</h2>
+
+            <div className="flex-1 overflow-y-auto">
+            {activities.map((act, index) => (
+                <div key={index} className="flex gap-3 mb-4 items-start">
+                <div className="p-2 rounded-full bg-gray-100">
+                    {act.type === "Confirmed" ? (
+                    <CheckCircle size={16} className="text-green-500" />
+                    ) : (
+                    <Clock size={16} className="text-yellow-500" />
+                    )}
+                </div>
+
+                <div>
+                    <p className="text-sm font-semibold">{act.text}</p>
+                    <p className="text-xs text-gray-500">{act.name}</p>
+                    <p className="text-xs text-gray-400">{act.time}</p>
+                </div>
+                </div>
+            ))}
+            </div>
+        </div>
+        </div>
+    </div>
+
+    {showAppointmentsModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl w-[700px] max-h-[80vh] overflow-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">All Appointments</h2>
+            <button onClick={() => setShowAppointmentsModal(false)}>
+                <X />
+            </button>
+            </div>
+
+            {appointments.length === 0 ? (
+            <p className="text-center text-gray-400 py-10">No appointments found</p>
+            ) : (
+            appointments.map((item) => (
+                <div
+                key={item.id}
+                className="border-b py-3 flex justify-between items-center"
+                >
+                <div>
+                    <p className="font-medium">{item.patient}</p>
+                    <p className="text-sm text-gray-500">{item.reason}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
+                    {item.status || "Pending"}
+                    </span>
+
+                    <button
+                    onClick={() => updateStatus(item.id, "Confirmed")}
+                    className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg"
+                    >
+                    Confirm
+                    </button>
+
+                    <button
+                    onClick={() => handleDeleteAppointment(item.id)}
+                    className="text-xs px-2 py-1 bg-red-500 text-white rounded-lg"
+                    >
+                    Remove
+                    </button>
+                </div>
+                </div>
+            ))
+            )}
+        </div>
+        </div>
+    )}
+    </div>
+);
+};
+
+const Card = ({ title, icon, value, iconColor }) => (
+    <div className="bg-white p-5 rounded-xl shadow-sm flex justify-between">
+    <div>
+    <p className="text-sm text-gray-500">{title}</p>
+    <p className="text-2xl font-bold mt-1">{value}</p>
+    </div>
+    <div className={iconColor}>{icon}</div>
+</div>
+);
+
+export default Dashboard;
