@@ -1,5 +1,15 @@
 import { React, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Sidebar from "./components/adminSidebar";
+import AdminDashboard from "./pages/adminDashboard";
+import AdminPatients from "./pages/adminPatient";
+import AdminAppointment from "./pages/adminAppointment";
+import AdminCalendarView from "./pages/adminCalendarView";
+import AdminScheduleAppointment from "./components/adminScheduleAppointment";
+import AdminMedicalRecords from "./pages/adminMedicalRecords";
+import AdminDepartments from "./pages/adminDepartments";
+import AdminStaff from "./pages/adminStaff";
+import AdminShift from "./pages/adminshift";
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Patients from './pages/Patients'
@@ -41,6 +51,18 @@ const App = () => {
         <Route path="/nurse-calendar" element={<NurseCalendar />} />
         <Route path="/nurse-medical-record" element={<NurseMedicalRecord />} />
         <Route path="/nurse-shift-schedule" element={<NurseShiftSchedule />} />
+          
+          <Route path="/" element={<AdminDashboard />} />
+            <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="/patients" element={<AdminPatients />} />
+            <Route path="/appointments" element={<AdminAppointment />} />
+            <Route path="/appointments/all" element={<AdminAppointment />} />
+            <Route path="/appointments/calendar" element={<AdminCalendarView />} />
+            <Route path="/schedule-appointment" element={<AdminScheduleAppointment />} />
+            <Route path="/record" element={<AdminMedicalRecords />} />
+            <Route path="/staff/all" element={<AdminStaff />} />
+            <Route path="/staff/departments" element={<AdminDepartments />} />
+            <Route path="/staff/shifts" element={<AdminShift />} />
 
         {isAuthenticated ? (
           <>
