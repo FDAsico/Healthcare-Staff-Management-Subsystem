@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/adminSidebar";
+import api from "../lib/api";
 import {
   Users,
   Calendar,
@@ -8,19 +9,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// ─── STORAGE HELPERS ────────────────────────────────────
-const getStorage = (key, fallback = []) => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
+// ─── API HELPERS ────────────────────────────────────
 const getLast24Hours = (data) => {
   const now = Date.now();
-  return data.filter((item) => item.createdAt && now - item.createdAt <= 86400000);
+  return data.filter((item) => {
+    const itemDate = new Date(item.date || item.appointmentDate || item.createdAt).getTime();
+    return itemDate && now - itemDate <= 86400000;
+  });
 };
 
 const formatChange = (current, previous, suffix = "") => {
@@ -28,13 +23,6 @@ const formatChange = (current, previous, suffix = "") => {
   if (diff === 0) return `No change ${suffix}`;
   const sign = diff > 0 ? "+" : "";
   return `${sign}${diff} ${suffix}`;
-};
-
-const seedDefaults = () => {
-  if (!localStorage.getItem("doctors")) localStorage.setItem("doctors", JSON.stringify([]));
-  if (!localStorage.getItem("departments")) localStorage.setItem("departments", JSON.stringify([]));
-  if (!localStorage.getItem("patients")) localStorage.setItem("patients", JSON.stringify([]));
-  if (!localStorage.getItem("appointments")) localStorage.setItem("appointments", JSON.stringify([]));
 };
 
 // ─── COMPONENTS ───────────────────────────────────────────
@@ -46,6 +34,8 @@ const Dashboard = () => {
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalPatients: { value: 0, change: "" },
     todayAppointments: { value: 0, change: "" },
@@ -53,58 +43,125 @@ const Dashboard = () => {
     criticalAlerts: { value: 0, change: "" },
   });
 
-  useEffect(() => {
-    seedDefaults();
-  }, []);
+  // Fetch data from API
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch all data in parallel
+      const [patientsRes, appointmentsRes, staffRes, departmentsRes] = await Promise.all([
+        api.get("/patient-proxy/health-records").catch((err) => {
+          console.error("Patients API error:", err.response?.status, err.response?.data);
+          return { data: { data: [] } };
+        }),
+        api.get("/patient-proxy/appointments").catch((err) => {
+          console.error("Appointments API error:", err.response?.status, err.response?.data);
+          return { data: { data: [] } };
+        }),
+        api.get("/staff").catch((err) => {
+          console.error("Staff API error:", err.response?.status, err.response?.data);
+          return { data: { data: [] } };
+        }),
+        api.get("/departments").catch((err) => {
+          console.error("Departments API error:", err.response?.status, err.response?.data);
+          return { data: { data: [] } };
+        }),
+      ]);
 
-  const syncData = () => {
-    const savedAppointments = getStorage("appointments", []);
-    const savedPatients = getStorage("patients", []);
-    const savedDoctors = getStorage("doctors", []);
-    const savedDepartments = getStorage("departments", []);
+      console.log("API Responses:", {
+        patients: patientsRes.data,
+        appointments: appointmentsRes.data,
+        staff: staffRes.data,
+        departments: departmentsRes.data,
+      });
 
-    const normalizedAppointments = savedAppointments.map((a) => ({
-      ...a,
-      createdAt: a.createdAt || Date.now(),
-    }));
+      // Extract data based on specific API response structures
+      // Appointments: response.data.data.appointments
+      const appointmentsData = appointmentsRes.data?.data?.appointments || [];
+      
+      // Patients (health records): response.data.data.records  
+      const patientsData = patientsRes.data?.data?.records || [];
+      
+      // Staff: response.data.data (array directly)
+      const staffData = staffRes.data?.data || [];
+      
+      // Departments: response.data.data (array directly)
+      const departmentsData = departmentsRes.data?.data || [];
 
-    const todayAppts = getLast24Hours(normalizedAppointments);
-    const activeCases = todayAppts.filter((a) => a.status === "Confirmed").length;
+      console.log("Extracted Data:", {
+        patients: patientsData,
+        appointments: appointmentsData,
+        staff: staffData,
+        departments: departmentsData,
+      });
 
-    setAppointments(normalizedAppointments);
-    setPatients(savedPatients);
-    setDoctors(savedDoctors);
-    setDepartments(savedDepartments);
+      // Filter doctors from staff (role === "DOCTOR")
+      const doctorsData = staffData.filter((s) => s.role === "DOCTOR" || s.position?.toLowerCase().includes("doctor"));
 
-    setStats({
-      totalPatients: {
-        value: savedPatients.length,
-        change: formatChange(savedPatients.length, Math.max(0, savedPatients.length - 12), "from last month"),
-      },
-      todayAppointments: {
-        value: todayAppts.length,
-        change: formatChange(todayAppts.length, Math.max(0, todayAppts.length - 3), "from last month"),
-      },
-      activeCases: {
-        value: activeCases,
-        change: formatChange(activeCases, Math.max(0, activeCases - 8), "from last month"),
-      },
-      criticalAlerts: {
-        value: savedPatients.filter((p) => p.status === "critical").length,
-        change: formatChange(
-          savedPatients.filter((p) => p.status === "critical").length,
-          Math.max(0, savedPatients.filter((p) => p.status === "critical").length + 2),
-          "from last month"
-        ),
-      },
-    });
+      // Normalize appointments data from API
+      const normalizedAppointments = appointmentsData.map((a) => ({
+        ...a,
+        id: a.appointment_id || a._id,
+        patient: a.patient_name || "Unknown",
+        reason: a.reason || "General Checkup",
+        time: a.scheduled_at ? new Date(a.scheduled_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+        status: a.status || "Pending",
+        date: a.scheduled_at,
+      }));
+
+      const todayAppts = getLast24Hours(normalizedAppointments);
+      const activeCases = todayAppts.filter((a) => a.status === "Confirmed" || a.status === "Scheduled").length;
+
+      // Normalize patients data from health records API
+      const normalizedPatients = patientsData.map((p, index) => ({
+        ...p,
+        id: p.record_id || p.patient_id || index + 1,
+        firstName: p.patient_name?.split(' ')[0] || "Unknown",
+        lastName: p.patient_name?.split(' ').slice(1).join(' ') || "",
+        condition: p.record_type || "General Checkup",
+        status: "stable",
+      }));
+
+      setAppointments(normalizedAppointments);
+      setPatients(normalizedPatients);
+      setDoctors(doctorsData);
+      setDepartments(departmentsData);
+
+      setStats({
+        totalPatients: {
+          value: normalizedPatients.length,
+          change: formatChange(normalizedPatients.length, Math.max(0, normalizedPatients.length - 12), "from last month"),
+        },
+        todayAppointments: {
+          value: todayAppts.length,
+          change: formatChange(todayAppts.length, Math.max(0, todayAppts.length - 3), "from last month"),
+        },
+        activeCases: {
+          value: activeCases,
+          change: formatChange(activeCases, Math.max(0, activeCases - 8), "from last month"),
+        },
+        criticalAlerts: {
+          value: normalizedPatients.filter((p) => p.status === "critical" || p.priority === "high").length,
+          change: formatChange(
+            normalizedPatients.filter((p) => p.status === "critical" || p.priority === "high").length,
+            Math.max(0, normalizedPatients.filter((p) => p.status === "critical" || p.priority === "high").length + 2),
+            "from last month"
+          ),
+        },
+      });
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    syncData();
-    const events = ["storage", "appointments-updated", "patients-updated", "doctors-updated", "departments-updated"];
-    events.forEach((e) => window.addEventListener(e, syncData));
-    return () => events.forEach((e) => window.removeEventListener(e, syncData));
+    fetchDashboardData();
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -122,6 +179,24 @@ const Dashboard = () => {
       <div className={`flex-1 h-screen overflow-y-auto transition-all duration-300 ${collapsed ? "ml-20" : "ml-64"}`}>
         <div className="p-6 pb-24">
           <h1 className="text-xl font-bold mb-6">Welcome Admin!</h1>
+
+          {loading && (
+            <div className="bg-white rounded-xl shadow-sm p-6 text-center text-gray-500 mb-6">
+              <p className="text-xl font-semibold">Loading dashboard data...</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="bg-red-50 border border-red-200 rounded-xl shadow-sm p-6 text-center text-red-600 mb-6">
+              <p className="text-xl font-semibold">{error}</p>
+              <button
+                onClick={fetchDashboardData}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* ── STATS CARDS ── */}
           <div className="grid grid-cols-4 gap-4 mb-6">
@@ -269,15 +344,15 @@ const AppointmentRow = ({ item }) => (
 const DoctorRow = ({ doctor }) => (
   <div className="flex justify-between items-center py-3 border-b last:border-b-0">
     <div>
-      <p className="font-medium text-sm">{doctor.name}</p>
-      <p className="text-xs text-gray-500">{doctor.specialty}</p>
+      <p className="font-medium text-sm">{doctor.firstName} {doctor.lastName}</p>
+      <p className="text-xs text-gray-500">{doctor.role || "Doctor"}</p>
     </div>
     <span
       className={`text-xs px-2 py-1 rounded-full ${
-        doctor.available ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+        doctor.status === "ACTIVE" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
       }`}
     >
-      {doctor.available ? "Available" : "Unavailable"}
+      {doctor.status === "ACTIVE" ? "Active" : "Inactive"}
     </span>
   </div>
 );
@@ -309,14 +384,14 @@ const DepartmentCard = ({ department }) => (
   <div className="bg-white p-5 rounded-xl shadow-sm hover:shadow-md transition">
     <div className="flex justify-between items-start mb-3">
       <h3 className="font-semibold text-base">{department.name}</h3>
-      {department.active && (
+      {department.isActive && (
         <span className="text-xs px-2 py-1 bg-black text-white rounded-full">Active</span>
       )}
     </div>
     <p className="text-sm text-gray-500 mb-4">{department.description}</p>
     <div className="p-3 bg-gray-50 rounded-lg">
-      <p className="font-medium text-sm">{department.head}</p>
-      <p className="text-xs text-gray-500">Department Head</p>
+      <p className="font-medium text-sm">{department.location}</p>
+      <p className="text-xs text-gray-500">Location</p>
     </div>
   </div>
 );
