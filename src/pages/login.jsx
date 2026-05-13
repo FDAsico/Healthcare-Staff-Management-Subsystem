@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { user, login } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -20,6 +21,16 @@ const Login = () => {
       navigate('/');
     }
   }, [navigate, user]);
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'no_profile') {
+      setErrors((prev) => ({
+        ...prev,
+        submit: 'No profile created for this account. Please contact your administrator.',
+      }));
+    }
+  }, [searchParams]);
 
   const validate = () => {
     const newErrors = {};
