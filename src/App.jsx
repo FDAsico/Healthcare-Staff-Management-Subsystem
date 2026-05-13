@@ -75,7 +75,7 @@ function App() {
   if (isNurse) {
     DashboardComponent = NurseDashboard;
   } else if (isPharmacist) {
-    DashboardComponent = NurseDashboard; 
+    DashboardComponent = PharmaDashboard; 
   } else if (isDoctor) {
     DashboardComponent = Dashboard;
   } else if (isAdmin) {
