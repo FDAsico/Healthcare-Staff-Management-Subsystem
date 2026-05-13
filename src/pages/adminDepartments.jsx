@@ -14,7 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-const API_BASE = "https://healthcare-staff-management-api-648283514768.asia-southeast1.run.app/api/v1";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const getStorage = (key, fallback = []) => {
   try {
