@@ -10,6 +10,7 @@ import AdminDepartments from "./pages/adminDepartments";
 import AdminStaff from "./pages/adminStaff";
 import AdminShift from "./pages/adminshift";
 import Login from './pages/login'
+import Patients from './pages/Patients'
 import Dashboard from './pages/Dashboard'
 import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
@@ -67,7 +68,9 @@ function App() {
   let PatientsComponent;
   if (isNurse) {
     PatientsComponent = NursePatient;
-  } else if (isDoctor || isAdmin) {
+  } else if (isDoctor){
+    PatientsComponent = Patients;  
+  } else if (isAdmin) {
     PatientsComponent = AdminPatients;
   }
 
