@@ -58,11 +58,9 @@ function StaffManagement({ role = "admin" }) {
   const [formError, setFormError] = useState("");
 
   // Admin User Search State
-  const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [adminUsers, setAdminUsers] = useState([]);
-  const [isSearchingAdmin, setIsSearchingAdmin] = useState(false);
+  const [isLoadingAdminUsers, setIsLoadingAdminUsers] = useState(false);
   const [selectedAdminUser, setSelectedAdminUser] = useState(null);
-  const [showAdminResults, setShowAdminResults] = useState(false);
 
   // Staff Form State
   const [staffForm, setStaffForm] = useState({
@@ -147,53 +145,55 @@ function StaffManagement({ role = "admin" }) {
     }
   };
 
-  // Search admin users via admin-proxy
-  const searchAdminUsers = async () => {
-    if (!adminSearchQuery.trim()) {
-      setFormError("Please enter a name to search");
-      return;
-    }
-
-    setIsSearchingAdmin(true);
+  // Fetch all admin users when modal opens
+  const fetchAdminUsers = async () => {
+    setIsLoadingAdminUsers(true);
     setFormError("");
     setAdminUsers([]);
     setSelectedAdminUser(null);
-    setShowAdminResults(true);
 
     try {
       const token = getAuthToken();
-      const queryParams = new URLSearchParams();
       
-      // Split query into first/last name if space exists
-      const parts = adminSearchQuery.trim().split(" ");
-      if (parts.length > 1) {
-        queryParams.append("firstName", parts[0]);
-        queryParams.append("lastName", parts.slice(1).join(" "));
-      } else {
-        queryParams.append("firstName", adminSearchQuery.trim());
-      }
-
-      const res = await fetch(`${API_BASE}/admin-proxy/users?${queryParams.toString()}`, {
+      const res = await fetch(`${API_BASE}/admin-proxy/users`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        throw new Error(`Admin search failed: ${res.status}`);
+        throw new Error(`Failed to fetch admin users: ${res.status}`);
       }
 
       const result = await res.json();
       const users = result.users || result.data || result || [];
       setAdminUsers(Array.isArray(users) ? users : []);
     } catch (error) {
-      console.error("Admin search error:", error);
-      setFormError(error.message || "Failed to search admin users");
+      console.error("Admin users fetch error:", error);
+      setFormError(error.message || "Failed to load admin users");
     } finally {
-      setIsSearchingAdmin(false);
+      setIsLoadingAdminUsers(false);
     }
+  };
+
+  // Fetch admin users when modal opens
+  useEffect(() => {
+    if (isAddModalOpen) {
+      fetchAdminUsers();
+    }
+  }, [isAddModalOpen]);
+
+  // Generate employee ID based on role
+  const generateEmployeeId = (role) => {
+    if (role === "ADMIN") {
+      return "000";
+    }
+    // Generate a unique ID for non-admin roles (EMP-XXX format)
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    return `EMP-${randomNum}`;
   };
 
   const selectAdminUser = (user) => {
     setSelectedAdminUser(user);
+    const newEmployeeId = generateEmployeeId(staffForm.role);
     setStaffForm({
       ...staffForm,
       firstName: user.first_name || user.firstName || "",
@@ -201,9 +201,19 @@ function StaffManagement({ role = "admin" }) {
       email: user.email || "",
       phone: user.phone || "",
       middleName: user.middle_name || user.middleName || "",
+      employeeId: newEmployeeId,
     });
-    setShowAdminResults(false);
-    setAdminSearchQuery(`${user.first_name || user.firstName} ${user.last_name || user.lastName}`);
+  };
+
+  // Handle role change and update employee ID accordingly
+  const handleRoleChange = (e) => {
+    const newRole = e.target.value;
+    const newEmployeeId = generateEmployeeId(newRole);
+    setStaffForm({
+      ...staffForm,
+      role: newRole,
+      employeeId: newEmployeeId,
+    });
   };
 
   const handleAddStaff = async (e) => {
@@ -238,6 +248,12 @@ function StaffManagement({ role = "admin" }) {
         return;
       }
 
+      // Format dateOfBirth to ISO-8601 if provided
+      let formattedDateOfBirth = undefined;
+      if (staffForm.dateOfBirth) {
+        formattedDateOfBirth = new Date(staffForm.dateOfBirth).toISOString();
+      }
+
       const payload = {
         user_id: selectedAdminUser.user_id,
         firstName: staffForm.firstName.trim(),
@@ -250,7 +266,7 @@ function StaffManagement({ role = "admin" }) {
         email: staffForm.email?.trim() || undefined,
         phone: staffForm.phone?.trim() || undefined,
         address: staffForm.address?.trim() || undefined,
-        dateOfBirth: staffForm.dateOfBirth || undefined,
+        dateOfBirth: formattedDateOfBirth,
         middleName: staffForm.middleName?.trim() || undefined,
       };
 
@@ -289,10 +305,8 @@ function StaffManagement({ role = "admin" }) {
   };
 
   const resetModal = () => {
-    setAdminSearchQuery("");
     setAdminUsers([]);
     setSelectedAdminUser(null);
-    setShowAdminResults(false);
     setStaffForm({
       firstName: "",
       lastName: "",
@@ -564,33 +578,20 @@ function StaffManagement({ role = "admin" }) {
                 </div>
               )}
 
-              {/* Admin User Search */}
+              {/* Admin Users List */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Admin User <span className="text-red-400">*</span>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Admin User <span className="text-red-400">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Type name and press Enter..."
-                    value={adminSearchQuery}
-                    onChange={(e) => setAdminSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchAdminUsers())}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={searchAdminUsers}
-                    disabled={isSearchingAdmin}
-                    className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
-                  >
-                    {isSearchingAdmin ? "..." : "Search"}
-                  </button>
-                </div>
-
-                {/* Search Results Dropdown */}
-                {showAdminResults && adminUsers.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                
+                {/* Admin Users List */}
+                {isLoadingAdminUsers ? (
+                  <div className="flex items-center justify-center py-4 border border-gray-200 rounded-lg">
+                    <Loader2 size={20} className="animate-spin text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-500">Loading users...</span>
+                  </div>
+                ) : adminUsers.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto mb-4">
                     {adminUsers.map((user) => (
                       <div 
                         key={user.user_id}
@@ -613,22 +614,20 @@ function StaffManagement({ role = "admin" }) {
                       </div>
                     ))}
                   </div>
-                )}
-
-                {showAdminResults && !isSearchingAdmin && adminUsers.length === 0 && (
-                  <p className="text-xs text-gray-400 mt-2">No users found. Try a different name.</p>
+                ) : (
+                  <p className="text-xs text-gray-400 py-2">No admin users found.</p>
                 )}
 
                 {/* Selected User Badge */}
                 {selectedAdminUser && (
-                  <div className="mt-2 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                     <Check size={14} className="text-blue-600" />
                     <span className="text-sm text-blue-800">
                       Selected: {selectedAdminUser.first_name || selectedAdminUser.firstName} {selectedAdminUser.last_name || selectedAdminUser.lastName}
                     </span>
                     <button 
                       type="button"
-                      onClick={() => { setSelectedAdminUser(null); setAdminSearchQuery(""); }}
+                      onClick={() => setSelectedAdminUser(null)}
                       className="ml-auto text-blue-400 hover:text-blue-600"
                     >
                       <X size={14} />
@@ -691,7 +690,7 @@ function StaffManagement({ role = "admin" }) {
                   <select 
                     required
                     value={staffForm.role} 
-                    onChange={(e) => setStaffForm({...staffForm, role: e.target.value})} 
+                    onChange={handleRoleChange}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black/10"
                   >
                     <option value="">Select Role</option>
@@ -745,9 +744,9 @@ function StaffManagement({ role = "admin" }) {
                   <input 
                     type="text" 
                     value={staffForm.employeeId} 
-                    onChange={(e) => setStaffForm({...staffForm, employeeId: e.target.value})} 
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-                    placeholder="EMP-001"
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600"
+                    placeholder="Auto-generated"
                   />
                 </div>
 
@@ -801,7 +800,7 @@ function StaffManagement({ role = "admin" }) {
                   disabled={isSubmitting || !selectedAdminUser}
                   className="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-xl transition disabled:opacity-50"
                 >
-                  {isSubmitting ? "Creating..." : "Create Staff"}
+                  {isSubmitting ? "Creating..." : "Add Staff"}
                 </button>
               </div>
             </form>
