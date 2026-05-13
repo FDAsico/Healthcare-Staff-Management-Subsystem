@@ -71,6 +71,16 @@ const NurseDashboard = () => {
       (item) => item.status === "Confirmed"
     ).length;
 
+  // Generate recent activities from appointments
+  const activities = appointments
+    .slice(0, 5)
+    .map((a) => ({
+      type: a.status,
+      text: `${a.status || "Pending"} Appointment`,
+      name: a.patient || "Unknown Patient",
+      time: a.time || a.scheduled_at || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }));
+
   return (
 
     <div className="bg-blue-500/30 min-h-screen flex">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
+import api from "../lib/api";
 
 import {
   Users,
@@ -12,13 +13,8 @@ import {
   Clock,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const Dashboard = () => {
   const { user } = useAuth();
-
-  // GET TOKEN FROM LOCAL STORAGE
-  const token = localStorage.getItem("token");
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -48,48 +44,26 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      console.log("API URL:", API_URL);
-      console.log("TOKEN:", token);
       console.log("USER:", user);
 
       const [appointmentsRes, patientsRes] =
         await Promise.all([
-          fetch(`${API_URL}/appointments/my`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          api.get("/patient-proxy/appointments").catch((err) => {
+            console.error("Appointments API error:", err.response?.status, err.response?.data);
+            return { data: { data: { appointments: [] } } };
           }),
-
-          fetch(`${API_URL}/patients/my`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          api.get("/patient-proxy/health-records").catch((err) => {
+            console.error("Patients API error:", err.response?.status, err.response?.data);
+            return { data: { data: { records: [] } } };
           }),
         ]);
 
-      console.log(
-        "Appointments Status:",
-        appointmentsRes.status
-      );
+      console.log("Appointments Response:", appointmentsRes.data);
+      console.log("Patients Response:", patientsRes.data);
 
-      console.log(
-        "Patients Status:",
-        patientsRes.status
-      );
-
-      if (!appointmentsRes.ok) {
-        throw new Error("Appointments fetch failed");
-      }
-
-      if (!patientsRes.ok) {
-        throw new Error("Patients fetch failed");
-      }
-
-      const appointmentsData =
-        await appointmentsRes.json();
-
-      const patientsData =
-        await patientsRes.json();
+      // Extract data based on API response structure
+      const appointmentsData = appointmentsRes.data?.data?.appointments || [];
+      const patientsData = patientsRes.data?.data?.records || [];
 
       console.log("Appointments:", appointmentsData);
       console.log("Patients:", patientsData);
@@ -152,31 +126,14 @@ const Dashboard = () => {
   // ─────────────────────────────────────────────
   const updateStatus = async (id, status) => {
     try {
-      const response = await fetch(
-        `${API_URL}/appointments/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to update appointment"
-        );
-      }
-
+      await api.put(`/appointments/${id}`, { status });
       setAppointments((prev) =>
         prev.map((a) =>
-          a.id === id ? { ...a, status } : a
+          a.appointment_id === id || a._id === id ? { ...a, status } : a
         )
       );
     } catch (error) {
-      console.error(error);
+      console.error("Failed to update appointment:", error);
     }
   };
 
@@ -185,27 +142,12 @@ const Dashboard = () => {
   // ─────────────────────────────────────────────
   const handleDeleteAppointment = async (id) => {
     try {
-      const response = await fetch(
-        `${API_URL}/appointments/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to delete appointment"
-        );
-      }
-
+      await api.delete(`/appointments/${id}`);
       setAppointments((prev) =>
-        prev.filter((a) => a.id !== id)
+        prev.filter((a) => a.appointment_id !== id && a._id !== id)
       );
     } catch (error) {
-      console.error(error);
+      console.error("Failed to delete appointment:", error);
     }
   };
 
@@ -231,17 +173,8 @@ const Dashboard = () => {
         <div className="text-sm text-gray-500">
           <p>
             User:{" "}
-            {user ? JSON.stringify(user) : "No User"}
+            {user ? user.name || user.username || "Unknown" : "No User"}
           </p>
-
-          <p>
-            Token:{" "}
-            {token
-              ? `${token.substring(0, 20)}...`
-              : "No Token"}
-          </p>
-
-          <p>API: {API_URL}</p>
         </div>
       </div>
     );
