@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import NurseSidebar from "../components/NurseSidebar";
+import api from "../lib/api";
 
 import {
   Users,
@@ -14,18 +15,82 @@ import {
 const NurseDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
+
+  // Fetch data from API
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [appointmentsRes, patientsRes] = await Promise.all([
+        api.get("/patient-proxy/appointments").catch((err) => {
+          console.error("Appointments API error:", err.response?.status, err.response?.data);
+          return { data: { data: { appointments: [] } } };
+        }),
+        api.get("/patient-proxy/health-records").catch((err) => {
+          console.error("Patients API error:", err.response?.status, err.response?.data);
+          return { data: { data: { records: [] } } };
+        }),
+      ]);
+
+      console.log("Nurse Dashboard - Appointments:", appointmentsRes.data);
+      console.log("Nurse Dashboard - Patients:", patientsRes.data);
+
+      // Extract data based on API response structure
+      const appointmentsData = appointmentsRes.data?.data?.appointments || [];
+      const patientsData = patientsRes.data?.data?.records || [];
+
+      // Normalize appointments data
+      const normalizedAppointments = appointmentsData.map((a) => ({
+        id: a.appointment_id || a._id,
+        patient: a.patient_name || "Unknown",
+        reason: a.reason || "General Checkup",
+        time: a.scheduled_at ? new Date(a.scheduled_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+        status: a.status || "Pending",
+        date: a.scheduled_at,
+        createdAt: a.created_at || a.scheduled_at,
+      }));
+
+      // Normalize patients data - show all health records
+      const normalizedPatients = patientsData.map((p, index) => ({
+        id: p.record_id || p.patient_id || index,
+        patientId: p.patient_id,
+        name: p.patient_name || "Unknown",
+        recordType: p.record_type || "General Checkup",
+        recordDate: p.record_date || p.created_at,
+        summary: p.summary || "",
+        provider: p.provider || "",
+        details: p.details || null,
+      }));
+
+      setAppointments(normalizedAppointments);
+      setPatients(normalizedPatients);
+    } catch (err) {
+      console.error("Error fetching nurse dashboard data:", err);
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getLast24HoursAppointments = (data) => {
     const now = Date.now();
 
     return data.filter((item) => {
       if (!item.createdAt) return false;
-
-      return now - item.createdAt <= 24 * 60 * 60 * 1000;
+      return now - new Date(item.createdAt).getTime() <= 24 * 60 * 60 * 1000;
     });
   };
 
@@ -47,20 +112,28 @@ const NurseDashboard = () => {
     };
   }, []);
 
-  const updateStatus = (id, status) => {
-    const updated = appointments.map((a) =>
-      a.id === id ? { ...a, status } : a
-    );
-
-    setAppointments(updated);
+  const updateStatus = async (id, status) => {
+    try {
+      await api.put(`/appointments/${id}`, { status });
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, status } : a
+        )
+      );
+    } catch (error) {
+      console.error("Failed to update appointment:", error);
+    }
   };
 
-  const handleDeleteAppointment = (id) => {
-    const updated = appointments.filter(
-      (a) => a.id !== id
-    );
-
-    setAppointments(updated);
+  const handleDeleteAppointment = async (id) => {
+    try {
+      await api.delete(`/appointments/${id}`);
+      setAppointments((prev) =>
+        prev.filter((a) => a.id !== id)
+      );
+    } catch (error) {
+      console.error("Failed to delete appointment:", error);
+    }
   };
 
   const todayAppointments =
