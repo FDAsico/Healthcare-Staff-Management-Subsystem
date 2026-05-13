@@ -19,10 +19,17 @@ import MedicalRecord from './pages/MedicalRecord'
 import NurseDashboard from './pages/NurseDashboard'
 import NursePatient from './pages/NursePatient'
 import NurseShiftSchedule from './pages/NurseShiftSchedule'
+import PharmaDashboard from './pages/PharmaDashboard'
+import PharmaSidebar from './components/PharmaSidebar'
+import PharmaScheule from './pages/PharmaSchedule'
 
 // Component to check auth and render children or redirect
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
+  const role = user?.role?.toLowerCase();
+  const isNurse = role === "nurse";
+  const isPharmacist = role === "pharmacist";
+
   
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -110,6 +117,7 @@ function App() {
   }
 
   return (
+
     <Routes>
       {/* Public Routes */}
       <Route
@@ -246,7 +254,23 @@ function App() {
         }
       />
 
+      <Route
+        path="/"
+        element={user ? (isPharmacist ? <PharmaDashboard /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
+      />
+
+    <Route
+        path="/pharma-dashboard"
+        element={user && isPharmacist? <PharmaDashboard /> : <Navigate to="/login" replace />}
+      />
+      
+    <Route
+      path="/shift-schedule"
+      element={isPharmacist? <PharmaScheule /> : <Navigate to="/login" replace />}
+  />
+
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+      
     </Routes>
   );
 }
