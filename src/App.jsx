@@ -22,6 +22,7 @@ import NurseShiftSchedule from './pages/NurseShiftSchedule'
 import PharmaDashboard from './pages/PharmaDashboard'
 import PharmaSidebar from './components/PharmaSidebar'
 import PharmaScheule from './pages/PharmaSchedule'
+import ShiftSchedule from './pages/ShiftSchedule'
 
 // Component to check auth and render children or redirect
 function RequireAuth({ children }) {
@@ -75,7 +76,7 @@ function App() {
   if (isNurse) {
     DashboardComponent = NurseDashboard;
   } else if (isPharmacist) {
-    DashboardComponent = NurseDashboard; 
+    DashboardComponent = PharmaDashboard; 
   } else if (isDoctor) {
     DashboardComponent = Dashboard;
   } else if (isAdmin) {
@@ -114,6 +115,18 @@ function App() {
     CalendarComponent = AdminCalendarView;
   } else if (isDoctor || isNurse || isPharmacist) {
     CalendarComponent = CalendarView;
+  }
+
+  // Shift Schedule component selector
+  let ShiftScheduleComponent;
+  if (isNurse) {
+    ShiftScheduleComponent = NurseShiftSchedule;
+  } else if (isPharmacist) {
+    ShiftScheduleComponent = PharmaScheule;
+  } else if (isDoctor) {
+    ShiftScheduleComponent = ShiftSchedule;
+  } else if (isAdmin) {
+    ShiftScheduleComponent = AdminShift;
   }
 
   return (
@@ -247,27 +260,12 @@ function App() {
         path="/shift-schedule"
         element={
           <RequireAuth>
-            <RequireRole allowedRoles={["NURSE", "PHARMACIST"]}>
-              <NurseShiftSchedule />
+            <RequireRole allowedRoles={["NURSE", "PHARMACIST", "DOCTOR"]}>
+              {ShiftScheduleComponent ? <ShiftScheduleComponent /> : <Navigate to="/" replace />}
             </RequireRole>
           </RequireAuth>
         }
       />
-
-      <Route
-        path="/"
-        element={user ? (isPharmacist ? <PharmaDashboard /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
-      />
-
-    <Route
-        path="/pharma-dashboard"
-        element={user && isPharmacist? <PharmaDashboard /> : <Navigate to="/login" replace />}
-      />
-      
-    <Route
-      path="/shift-schedule"
-      element={isPharmacist? <PharmaScheule /> : <Navigate to="/login" replace />}
-  />
 
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
       
