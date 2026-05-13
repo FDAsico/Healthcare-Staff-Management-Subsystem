@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext";
 
 import {
   Users,
@@ -11,50 +12,240 @@ import {
   Clock,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Dashboard = () => {
+  const { user } = useAuth();
+
+  // GET TOKEN FROM LOCAL STORAGE
+  const token = localStorage.getItem("token");
+
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
 
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+  const [loading, setLoading] = useState(true);
 
-  const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("sidebar-collapsed") === "true"
+  );
 
-  const getLast24HoursAppointments = (data) => {
-    const now = Date.now();
-    return data.filter((item) => {
-      if (!item.createdAt) return false;
-      return now - item.createdAt <= 24 * 60 * 60 * 1000;
-    });
+  const [showAppointmentsModal, setShowAppointmentsModal] =
+    useState(false);
+
+  // ─────────────────────────────────────────────
+  // FETCH DASHBOARD DATA
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    fetchDashboardData();
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      console.log("API URL:", API_URL);
+      console.log("TOKEN:", token);
+      console.log("USER:", user);
+
+      const [appointmentsRes, patientsRes] =
+        await Promise.all([
+          fetch(`${API_URL}/appointments/my`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+
+          fetch(`${API_URL}/patients/my`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+      console.log(
+        "Appointments Status:",
+        appointmentsRes.status
+      );
+
+      console.log(
+        "Patients Status:",
+        patientsRes.status
+      );
+
+      if (!appointmentsRes.ok) {
+        throw new Error("Appointments fetch failed");
+      }
+
+      if (!patientsRes.ok) {
+        throw new Error("Patients fetch failed");
+      }
+
+      const appointmentsData =
+        await appointmentsRes.json();
+
+      const patientsData =
+        await patientsRes.json();
+
+      console.log("Appointments:", appointmentsData);
+      console.log("Patients:", patientsData);
+
+      setAppointments(appointmentsData || []);
+      setPatients(patientsData || []);
+    } catch (error) {
+      console.error("Dashboard Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ─────────────────────────────────────────────
+  // SIDEBAR COLLAPSE
+  // ─────────────────────────────────────────────
   useEffect(() => {
     const handleSidebarCollapse = (event) => {
       setCollapsed(event.detail);
     };
 
-    window.addEventListener("sidebar-collapse", handleSidebarCollapse);
+    window.addEventListener(
+      "sidebar-collapse",
+      handleSidebarCollapse
+    );
+
     return () => {
-      window.removeEventListener("sidebar-collapse", handleSidebarCollapse);
+      window.removeEventListener(
+        "sidebar-collapse",
+        handleSidebarCollapse
+      );
     };
   }, []);
 
-  const updateStatus = (id, status) => {
-    const updated = appointments.map((a) =>
-      a.id === id ? { ...a, status } : a
-    );
-    setAppointments(updated);
+  // ─────────────────────────────────────────────
+  // GET LAST 24 HOURS APPOINTMENTS
+  // ─────────────────────────────────────────────
+  const getLast24HoursAppointments = (data) => {
+    const now = Date.now();
+
+    return data.filter((item) => {
+      if (!item.createdAt) return false;
+
+      return (
+        now - new Date(item.createdAt).getTime() <=
+        24 * 60 * 60 * 1000
+      );
+    });
   };
 
-  const handleDeleteAppointment = (id) => {
-    const updated = appointments.filter((a) => a.id !== id);
-    setAppointments(updated);
-  };
-
-  const todayAppointments = getLast24HoursAppointments(appointments);
+  const todayAppointments =
+    getLast24HoursAppointments(appointments);
 
   const activeCasesCount = todayAppointments.filter(
     (item) => item.status === "Confirmed"
   ).length;
+
+  // ─────────────────────────────────────────────
+  // UPDATE STATUS
+  // ─────────────────────────────────────────────
+  const updateStatus = async (id, status) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/appointments/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to update appointment"
+        );
+      }
+
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, status } : a
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // DELETE APPOINTMENT
+  // ─────────────────────────────────────────────
+  const handleDeleteAppointment = async (id) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/appointments/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to delete appointment"
+        );
+      }
+
+      setAppointments((prev) =>
+        prev.filter((a) => a.id !== id)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // RECENT ACTIVITIES
+  // ─────────────────────────────────────────────
+  const activities = appointments
+    .slice(0, 5)
+    .map((a) => ({
+      type: a.status,
+      text: `${a.status || "Pending"} Appointment`,
+      name: a.patient,
+      time: a.time,
+    }));
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
+        <p className="text-lg font-medium">
+          Loading Dashboard...
+        </p>
+
+        <div className="text-sm text-gray-500">
+          <p>
+            User:{" "}
+            {user ? JSON.stringify(user) : "No User"}
+          </p>
+
+          <p>
+            Token:{" "}
+            {token
+              ? `${token.substring(0, 20)}...`
+              : "No Token"}
+          </p>
+
+          <p>API: {API_URL}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen flex">
@@ -65,22 +256,56 @@ const Dashboard = () => {
           collapsed ? "ml-[85px]" : "ml-[265px]"
         }`}
       >
-        <h1 className="text-[20px] font-bold mb-6">Good Day Doctor!</h1>
+        <h1 className="text-[20px] font-bold mb-6">
+          Welcome Dr. {user?.name || "Doctor"}
+        </h1>
 
+        {/* STATS */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card title="Total Patients" icon={<Users />} value={patients.length} iconColor="text-blue-500" />
-          <Card title="Today's Appointments" icon={<Calendar />} value={todayAppointments.length} iconColor="text-green-500" />
-          <Card title="Active Cases" icon={<Activity />} value={activeCasesCount} iconColor="text-orange-500" />
-          <Card title="Critical Alerts" icon={<AlertCircle />} value="0" iconColor="text-red-500" />
+          <Card
+            title="Total Patients"
+            icon={<Users />}
+            value={patients.length}
+            iconColor="text-blue-500"
+          />
+
+          <Card
+            title="Today's Appointments"
+            icon={<Calendar />}
+            value={todayAppointments.length}
+            iconColor="text-green-500"
+          />
+
+          <Card
+            title="Active Cases"
+            icon={<Activity />}
+            value={activeCasesCount}
+            iconColor="text-orange-500"
+          />
+
+          <Card
+            title="Critical Alerts"
+            icon={<AlertCircle />}
+            value="0"
+            iconColor="text-red-500"
+          />
         </div>
 
+        {/* MAIN CONTENT */}
         <div className="grid grid-cols-3 gap-6 mb-6">
-          <div className="col-span-2 bg-white p-5 rounded-xl shadow-sm flex flex-col h-170">
-            <h2 className="text-lg font-semibold mb-4">Today's Appointments</h2>
+          {/* APPOINTMENTS */}
+          <div className="col-span-2 bg-white p-5 rounded-xl shadow-sm flex flex-col h-[680px]">
+            <h2 className="text-lg font-semibold mb-4">
+              Today's Appointments
+            </h2>
 
             <p className="text-sm text-gray-500 mb-3">
-              You have {todayAppointments.length} appointment
-              {todayAppointments.length !== 1 ? "s" : ""} in the last 24 hours
+              You have {todayAppointments.length}{" "}
+              appointment
+              {todayAppointments.length !== 1
+                ? "s"
+                : ""}{" "}
+              in the last 24 hours
             </p>
 
             <div className="flex-1 overflow-y-auto">
@@ -97,12 +322,19 @@ const Dashboard = () => {
                     className="flex justify-between items-center border-b py-3"
                   >
                     <div>
-                      <p className="font-medium">{item.patient}</p>
-                      <p className="text-sm text-gray-500">{item.reason}</p>
+                      <p className="font-medium">
+                        {item.patient}
+                      </p>
+
+                      <p className="text-sm text-gray-500">
+                        {item.reason}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <p className="text-sm font-medium">{item.time}</p>
+                      <p className="text-sm font-medium">
+                        {item.time}
+                      </p>
 
                       <span
                         className={`text-xs px-2 py-1 rounded-full ${
@@ -118,7 +350,9 @@ const Dashboard = () => {
                         onClick={() =>
                           updateStatus(
                             item.id,
-                            item.status === "Confirmed" ? "Pending" : "Confirmed"
+                            item.status === "Confirmed"
+                              ? "Pending"
+                              : "Confirmed"
                           )
                         }
                         className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-100"
@@ -134,7 +368,9 @@ const Dashboard = () => {
             </div>
 
             <button
-              onClick={() => setShowAppointmentsModal(true)}
+              onClick={() =>
+                setShowAppointmentsModal(true)
+              }
               className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-100"
             >
               <Calendar size={16} />
@@ -142,24 +378,44 @@ const Dashboard = () => {
             </button>
           </div>
 
+          {/* RECENT ACTIVITIES */}
           <div className="bg-white p-5 rounded-xl shadow-sm flex flex-col h-[480px]">
-            <h2 className="text-lg font-semibold mb-4">Recent Activities</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Recent Activities
+            </h2>
 
             <div className="flex-1 overflow-y-auto">
               {activities.map((act, index) => (
-                <div key={index} className="flex gap-3 mb-4 items-start">
+                <div
+                  key={index}
+                  className="flex gap-3 mb-4 items-start"
+                >
                   <div className="p-2 rounded-full bg-gray-100">
                     {act.type === "Confirmed" ? (
-                      <CheckCircle size={16} className="text-green-500" />
+                      <CheckCircle
+                        size={16}
+                        className="text-green-500"
+                      />
                     ) : (
-                      <Clock size={16} className="text-yellow-500" />
+                      <Clock
+                        size={16}
+                        className="text-yellow-500"
+                      />
                     )}
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold">{act.text}</p>
-                    <p className="text-xs text-gray-500">{act.name}</p>
-                    <p className="text-xs text-gray-400">{act.time}</p>
+                    <p className="text-sm font-semibold">
+                      {act.text}
+                    </p>
+
+                    <p className="text-xs text-gray-500">
+                      {act.name}
+                    </p>
+
+                    <p className="text-xs text-gray-400">
+                      {act.time}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -168,18 +424,28 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* MODAL */}
       {showAppointmentsModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-[700px] max-h-[80vh] overflow-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">All Appointments</h2>
-              <button onClick={() => setShowAppointmentsModal(false)}>
+              <h2 className="text-lg font-semibold">
+                All Appointments
+              </h2>
+
+              <button
+                onClick={() =>
+                  setShowAppointmentsModal(false)
+                }
+              >
                 <X />
               </button>
             </div>
 
             {appointments.length === 0 ? (
-              <p className="text-center text-gray-400 py-10">No appointments found</p>
+              <p className="text-center text-gray-400 py-10">
+                No appointments found
+              </p>
             ) : (
               appointments.map((item) => (
                 <div
@@ -187,8 +453,13 @@ const Dashboard = () => {
                   className="border-b py-3 flex justify-between items-center"
                 >
                   <div>
-                    <p className="font-medium">{item.patient}</p>
-                    <p className="text-sm text-gray-500">{item.reason}</p>
+                    <p className="font-medium">
+                      {item.patient}
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      {item.reason}
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -197,14 +468,21 @@ const Dashboard = () => {
                     </span>
 
                     <button
-                      onClick={() => updateStatus(item.id, "Confirmed")}
+                      onClick={() =>
+                        updateStatus(
+                          item.id,
+                          "Confirmed"
+                        )
+                      }
                       className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg"
                     >
                       Confirm
                     </button>
 
                     <button
-                      onClick={() => handleDeleteAppointment(item.id)}
+                      onClick={() =>
+                        handleDeleteAppointment(item.id)
+                      }
                       className="text-xs px-2 py-1 bg-red-500 text-white rounded-lg"
                     >
                       Remove
@@ -220,12 +498,21 @@ const Dashboard = () => {
   );
 };
 
-const Card = ({ title, icon, value, iconColor }) => (
+const Card = ({
+  title,
+  icon,
+  value,
+  iconColor,
+}) => (
   <div className="bg-white p-5 rounded-xl shadow-sm flex justify-between">
     <div>
       <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-2xl font-bold mt-1">{value}</p>
+
+      <p className="text-2xl font-bold mt-1">
+        {value}
+      </p>
     </div>
+
     <div className={iconColor}>{icon}</div>
   </div>
 );
