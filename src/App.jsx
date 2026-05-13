@@ -267,6 +267,62 @@ function App() {
         }
       />
 
+      <Route
+        path="/nurse-shift-schedule"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              {ShiftScheduleComponent ? <ShiftScheduleComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      {/* Nurse Specific Routes */}
+      <Route
+        path="/nurse-dashboard"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <NurseDashboard />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-patient"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <NursePatient />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-calendar"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <CalendarView />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-medical-record"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <MedicalRecord />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
       
     </Routes>
