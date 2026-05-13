@@ -1,4 +1,5 @@
 import { Navigate, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import AdminDashboard from "./pages/adminDashboard";
 import AdminPatients from "./pages/adminPatient";
@@ -45,6 +46,16 @@ function RequireRole({ allowedRoles, children }) {
   return children;
 }
 
+// Component to handle users with no profile
+function NoProfileHandler() {
+  useEffect(() => {
+    localStorage.removeItem("accessToken");
+    window.location.href = "/login?error=no_profile";
+  }, []);
+  
+  return <div className="min-h-screen flex items-center justify-center">Logging out...</div>;
+}
+
 function App() {
   const { user, loading, isAdmin, isDoctor, isNurse, isPharmacist } = useAuth();
 
@@ -57,9 +68,9 @@ function App() {
   if (isNurse) {
     DashboardComponent = NurseDashboard;
   } else if (isPharmacist) {
-    DashboardComponent = NurseDashboard; // Placeholder
+    DashboardComponent = NurseDashboard; 
   } else if (isDoctor) {
-    DashboardComponent = Dashboard; // Using AdminDashboard for now
+    DashboardComponent = Dashboard;
   } else if (isAdmin) {
     DashboardComponent = AdminDashboard;
   }
@@ -111,7 +122,7 @@ function App() {
         path="/"
         element={
           <RequireAuth>
-            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+            {DashboardComponent ? <DashboardComponent /> : <NoProfileHandler />}
           </RequireAuth>
         }
       />
@@ -120,7 +131,7 @@ function App() {
         path="/dashboard"
         element={
           <RequireAuth>
-            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+            {DashboardComponent ? <DashboardComponent /> : <NoProfileHandler />}
           </RequireAuth>
         }
       />
