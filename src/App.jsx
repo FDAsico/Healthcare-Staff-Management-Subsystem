@@ -1,4 +1,5 @@
 import { Navigate, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import AdminDashboard from "./pages/adminDashboard";
 import AdminPatients from "./pages/adminPatient";
@@ -10,6 +11,7 @@ import AdminDepartments from "./pages/adminDepartments";
 import AdminStaff from "./pages/adminStaff";
 import AdminShift from "./pages/adminshift";
 import Login from './pages/login'
+import Patients from './pages/Patients'
 import Dashboard from './pages/Dashboard'
 import Appointment from './pages/Appointment'
 import CalendarView from './pages/CalendarView'
@@ -17,10 +19,18 @@ import MedicalRecord from './pages/MedicalRecord'
 import NurseDashboard from './pages/NurseDashboard'
 import NursePatient from './pages/NursePatient'
 import NurseShiftSchedule from './pages/NurseShiftSchedule'
+import PharmaDashboard from './pages/PharmaDashboard'
+import PharmaSidebar from './components/PharmaSidebar'
+import PharmaScheule from './pages/PharmaSchedule'
+import ShiftSchedule from './pages/ShiftSchedule'
 
 // Component to check auth and render children or redirect
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
+  const role = user?.role?.toLowerCase();
+  const isNurse = role === "nurse";
+  const isPharmacist = role === "pharmacist";
+
   
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -44,6 +54,16 @@ function RequireRole({ allowedRoles, children }) {
   return children;
 }
 
+// Component to handle users with no profile
+function NoProfileHandler() {
+  useEffect(() => {
+    localStorage.removeItem("accessToken");
+    window.location.href = "/login?error=no_profile";
+  }, []);
+  
+  return <div className="min-h-screen flex items-center justify-center">Logging out...</div>;
+}
+
 function App() {
   const { user, loading, isAdmin, isDoctor, isNurse, isPharmacist } = useAuth();
 
@@ -56,9 +76,9 @@ function App() {
   if (isNurse) {
     DashboardComponent = NurseDashboard;
   } else if (isPharmacist) {
-    DashboardComponent = NurseDashboard; // Placeholder
+    DashboardComponent = PharmaDashboard; 
   } else if (isDoctor) {
-    DashboardComponent = Dashboard; // Using AdminDashboard for now
+    DashboardComponent = Dashboard;
   } else if (isAdmin) {
     DashboardComponent = AdminDashboard;
   }
@@ -67,7 +87,9 @@ function App() {
   let PatientsComponent;
   if (isNurse) {
     PatientsComponent = NursePatient;
-  } else if (isDoctor || isAdmin) {
+  } else if (isDoctor){
+    PatientsComponent = Patients;  
+  } else if (isAdmin) {
     PatientsComponent = AdminPatients;
   }
 
@@ -95,7 +117,20 @@ function App() {
     CalendarComponent = CalendarView;
   }
 
+  // Shift Schedule component selector
+  let ShiftScheduleComponent;
+  if (isNurse) {
+    ShiftScheduleComponent = NurseShiftSchedule;
+  } else if (isPharmacist) {
+    ShiftScheduleComponent = PharmaScheule;
+  } else if (isDoctor) {
+    ShiftScheduleComponent = ShiftSchedule;
+  } else if (isAdmin) {
+    ShiftScheduleComponent = AdminShift;
+  }
+
   return (
+
     <Routes>
       {/* Public Routes */}
       <Route
@@ -108,7 +143,7 @@ function App() {
         path="/"
         element={
           <RequireAuth>
-            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+            {DashboardComponent ? <DashboardComponent /> : <NoProfileHandler />}
           </RequireAuth>
         }
       />
@@ -117,7 +152,7 @@ function App() {
         path="/dashboard"
         element={
           <RequireAuth>
-            {DashboardComponent ? <DashboardComponent /> : <Navigate to="/login" replace />}
+            {DashboardComponent ? <DashboardComponent /> : <NoProfileHandler />}
           </RequireAuth>
         }
       />
@@ -225,14 +260,71 @@ function App() {
         path="/shift-schedule"
         element={
           <RequireAuth>
-            <RequireRole allowedRoles={["NURSE", "PHARMACIST"]}>
-              <NurseShiftSchedule />
+            <RequireRole allowedRoles={["NURSE", "PHARMACIST", "DOCTOR"]}>
+              {ShiftScheduleComponent ? <ShiftScheduleComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-shift-schedule"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              {ShiftScheduleComponent ? <ShiftScheduleComponent /> : <Navigate to="/" replace />}
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      {/* Nurse Specific Routes */}
+      <Route
+        path="/nurse-dashboard"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <NurseDashboard />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-patient"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <NursePatient />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-calendar"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <CalendarView />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/nurse-medical-record"
+        element={
+          <RequireAuth>
+            <RequireRole allowedRoles={["NURSE"]}>
+              <MedicalRecord />
             </RequireRole>
           </RequireAuth>
         }
       />
 
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+      
     </Routes>
   );
 }

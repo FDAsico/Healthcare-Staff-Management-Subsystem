@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Calendar, CheckCircle, Stethoscope, Briefcase } from "lucide-react";
+import api from "../lib/api";
 
 const Appointment = () => {
   const [collapsed, setCollapsed] = useState(
@@ -8,6 +9,49 @@ const Appointment = () => {
   );
 
   const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch appointments from API
+  const fetchAppointments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get("/patient-proxy/appointments");
+      console.log("Appointments API response:", response.data);
+      
+      // Appointments API returns: response.data.data.appointments
+      const appointmentsData = response.data?.data?.appointments || [];
+
+      console.log("Extracted appointments data:", appointmentsData);
+
+      // Normalize appointments data from API
+      const normalizedAppointments = appointmentsData.map((a) => ({
+        id: a.appointment_id || a._id,
+        patient: a.patient_name || "Unknown",
+        doctor: a.doctor_name || "",
+        department: a.department || "",
+        date: a.scheduled_at || a.created_at || new Date().toISOString(),
+        time: a.scheduled_at ? new Date(a.scheduled_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "10:00 AM",
+        reason: a.reason || "General Checkup",
+        status: a.status || "Pending",
+      }));
+
+      setAppointments(normalizedAppointments);
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+      setError("Failed to load appointments. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchAppointments, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleSidebarCollapse = (event) => setCollapsed(event.detail);
@@ -17,52 +61,6 @@ const Appointment = () => {
         "sidebar-collapse",
         handleSidebarCollapse
       );
-  }, []);
-
-  useEffect(() => {
-    const syncAppointments = () => {
-      const patients =
-        JSON.parse(localStorage.getItem("patients")) || [];
-      const storedAppointments =
-        JSON.parse(localStorage.getItem("appointments")) || [];
-
-      const merged = patients.map((p) => {
-        const existing = storedAppointments.find(
-          (appt) => appt.id === p.id
-        );
-
-        return (
-          existing || {
-            id: p.id,
-            patient: `${p.firstName} ${p.lastName}`,
-            doctor: "",
-            department: "",
-            date:
-              p.lastVisit ||
-              new Date().toISOString().split("T")[0],
-            time: "10:00 AM",
-            reason: p.condition || "General Checkup",
-            status: "Pending",
-          }
-        );
-      });
-
-      setAppointments(merged);
-      localStorage.setItem(
-        "appointments",
-        JSON.stringify(merged)
-      );
-    };
-
-    syncAppointments();
-
-    window.addEventListener("focus", syncAppointments);
-    window.addEventListener("storage", syncAppointments);
-
-    return () => {
-      window.removeEventListener("focus", syncAppointments);
-      window.removeEventListener("storage", syncAppointments);
-    };
   }, []);
 
   const handleDoctorAssignment = (id, doctorName) => {
