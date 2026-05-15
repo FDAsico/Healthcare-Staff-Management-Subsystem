@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PharmaSidebar from '../components/PharmaSidebar';
 
 const sunIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -34,69 +35,89 @@ const moonIcon = (
 );
 
 const shifts = [
-  { id: "morning", label: "Morning Shift", time: "08:00 - 4:00",  icon: sunIcon    },
+  { id: "morning", label: "Morning Shift", time: "08:00 - 16:00",  icon: sunIcon    },
   { id: "evening", label: "Evening Shift", time: "16:00 - 00:00", icon: sunsetIcon },
-  { id: "night",   label: "Night Shift",   time: "00:00 - 08:00", icon: moonIcon   },
+  { id: "night",   label: "Night Shift",   time: "00:00 - 08:00", icon: moonIcon    },
 ];
 
 function ShiftSchedule({ role = "pharmacist" }) {
   const [schedules] = useState({ morning: [], evening: [], night: [] });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebar-collapsed') === 'true'
+  );
 
-  const handleAddShift = () => {
-    // placeholder — modal/page not yet created
-  };
+  // Sync state with sidebar custom collapse events
+  useEffect(() => {
+    const handleSidebarCollapse = (event) => {
+      setSidebarCollapsed(event.detail);
+    };
+
+    window.addEventListener('sidebar-collapse', handleSidebarCollapse);
+    return () => window.removeEventListener('sidebar-collapse', handleSidebarCollapse);
+  }, []);
+
+  const sidebarWidth = sidebarCollapsed ? 80 : 256;
 
   return (
-    <div className="flex-1 bg-gray-50 min-h-screen p-4 sm:p-8">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+      {/* 1. Sidebar inclusion */}
+      <PharmaSidebar />
 
-      {/* Page Title */}
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Shift</h1>
+      {/* 2. Responsive Main Content Area */}
+      <div 
+        className="transition-all duration-300 ease-in-out p-4 sm:p-8 flex-1"
+        style={{
+          marginLeft: `${sidebarWidth}px`,
+          width: `calc(100% - ${sidebarWidth}px)`,
+        }}
+      >
+        {/* Page Title */}
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Shift</h1>
 
-      {/* Subheader */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gray-800">Shift Schedule</p>
+        {/* Subheader */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Shift Schedule</p>
+          </div>
         </div>
 
-      </div>
+        {/* Shift Sections */}
+        <div className="flex flex-col gap-4">
+          {shifts.map((shift) => (
+            <div key={shift.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
 
-      {/* Shift Sections */}
-      <div className="flex flex-col gap-4">
-        {shifts.map((shift) => (
-          <div key={shift.id} className="bg-white rounded-xl border border-gray-200">
+              {/* Section Header */}
+              <div className="flex items-center gap-2 px-4 sm:px-5 py-4 border-b border-gray-100">
+                <span className="flex items-center">{shift.icon}</span>
+                <span className="text-sm font-bold text-gray-800">{shift.label}</span>
+                <span className="text-xs text-gray-400 ml-1">{shift.time}</span>
+              </div>
 
-            {/* Section Header */}
-            <div className="flex items-center gap-2 px-4 sm:px-5 py-4 border-b border-gray-100">
-              <span className="flex items-center">{shift.icon}</span>
-              <span className="text-sm font-bold text-gray-800">{shift.label}</span>
-              <span className="text-xs text-gray-400 ml-1">{shift.time}</span>
+              {/* Section Body */}
+              <div className="px-4 sm:px-5 py-4">
+                {schedules[shift.id].length === 0 ? (
+                  <p className="text-xs text-gray-300 text-center py-3">No schedules yet.</p>
+                ) : (
+                  schedules[shift.id].map((s, i) => (
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-1 sm:gap-0">
+                      <span className="text-sm font-medium text-gray-800">{s.name}</span>
+                      {s.role && <span className="text-xs text-gray-400">{s.role}</span>}
+                      {s.status && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
+                          s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {s.status}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
             </div>
-
-            {/* Section Body */}
-            <div className="px-4 sm:px-5 py-4">
-              {schedules[shift.id].length === 0 ? (
-                <p className="text-xs text-gray-300 text-center py-3">No schedules yet.</p>
-              ) : (
-                schedules[shift.id].map((s, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-1 sm:gap-0">
-                    <span className="text-sm font-medium text-gray-800">{s.name}</span>
-                    {s.role && <span className="text-xs text-gray-400">{s.role}</span>}
-                    {s.status && (
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                        s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                      }`}>
-                        {s.status}
-                      </span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-
     </div>
   );
 }
