@@ -3,8 +3,10 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import routes from "./routes/index.js";
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+export const app = express();
+export const PORT = process.env.PORT || 8080;
+export default app;
+module.exports = app;
 
 app.use(express.json());
 app.use(cors({ origin: [process.env.FRONTEND_URL, "http://localhost:5173"].filter(Boolean) as string[], credentials: true }));
@@ -20,4 +22,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ message: err.message || "Server error" });
 });
 
-app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
+}
