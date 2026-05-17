@@ -25,6 +25,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["node", "dist/src/index.js"]
