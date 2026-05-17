@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { logAction } from "../utils/auditLogger.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
 
@@ -24,12 +25,26 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     // Admin uses user_id (snake_case), we use userId
     const userId = decoded.user_id || decoded.userId;
     if (!userId || !decoded.role) {
+      // Log failed authentication
+      logAction({
+        action: "FAILED_LOGIN",
+        entity: "AUTH",
+        newValue: { error: "Invalid token payload" },
+        ipAddress: req.ip || req.connection?.remoteAddress,
+      });
       return res.status(401).json({ message: "Invalid token payload" });
     }
 
     req.user = { userId, role: decoded.role };
     next();
   } catch {
+    // Log failed authentication
+    logAction({
+      action: "FAILED_LOGIN",
+      entity: "AUTH",
+      newValue: { error: "Invalid or expired token" },
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    });
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 }

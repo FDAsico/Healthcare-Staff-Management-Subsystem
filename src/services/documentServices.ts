@@ -1,4 +1,5 @@
 import { prisma } from "../db.js";
+import { logAction } from "../utils/auditLogger.js";
 
 export async function getAll(query: Record<string, unknown>) {
   const page = Number(query.page) || 1;
@@ -29,22 +30,52 @@ export async function getById(id: string) {
 }
 
 export async function create(data: Record<string, unknown>) {
-  return prisma.staffDocument.create({
+  const document = await prisma.staffDocument.create({
     data: data as any,
-    include: { staff: { select: { firstName: true, lastName: true } } },
+    include: { staff: { select: { firstName: true, lastName: true, staff_id: true } } },
   });
+
+  // Audit log
+  await logAction({
+    action: "CREATE",
+    entity: "DOCUMENT",
+    entityId: document.document_id,
+    newValue: { documentType: document.documentType, title: document.title, staffId: document.staff_id },
+  });
+
+  return document;
 }
 
 export async function update(id: string, data: Record<string, unknown>) {
-  return prisma.staffDocument.update({
+  const document = await prisma.staffDocument.update({
     where: { document_id: id },
     data,
-    include: { staff: { select: { firstName: true, lastName: true } } },
+    include: { staff: { select: { firstName: true, lastName: true, staff_id: true } } },
   });
+
+  // Audit log
+  await logAction({
+    action: "UPDATE",
+    entity: "DOCUMENT",
+    entityId: id,
+    newValue: { documentType: document.documentType, title: document.title, staffId: document.staff_id },
+  });
+
+  return document;
 }
 
 export async function remove(id: string) {
-  return prisma.staffDocument.delete({
+  const document = await prisma.staffDocument.delete({
     where: { document_id: id },
   });
+
+  // Audit log
+  await logAction({
+    action: "DELETE",
+    entity: "DOCUMENT",
+    entityId: id,
+    oldValue: { documentType: document.documentType, title: document.title },
+  });
+
+  return document;
 }

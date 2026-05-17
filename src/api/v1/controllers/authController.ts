@@ -4,6 +4,8 @@ import { cacheUserFromAdmin } from "../../../services/userCacheService.js";
 import { generateAccessToken } from "../../../utils/auth.js";
 import { mapAdminToStaffRole } from "../../../utils/roleMapper.js";
 import { prisma } from "../../../db.js";
+import { logAction } from "../../../utils/auditLogger.js";
+import { sendAuditToAdminSubsystem } from "../../../clients/auditClient.js";
 
 export async function login(req: Request, res: Response) {
   try {
@@ -37,6 +39,24 @@ export async function login(req: Request, res: Response) {
 
     const suggestedStaffRole = mapAdminToStaffRole(adminAuth.user.role);
 
+    // Audit log successful login (local)
+    await logAction({
+      action: "LOGIN",
+      entity: "AUTH",
+      entityId: localUser.user_id,
+      performedBy: localUser.user_id,
+      newValue: { username: localUser.username, role: staff?.role, staffId: staff?.staff_id },
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    });
+
+    // Send to admin subsystem audit log
+    await sendAuditToAdminSubsystem({
+      user_id: localUser.user_id,
+      action_type: "LOGIN",
+      details: `User ${localUser.username} logged in successfully${staff ? ` as ${staff.role}` : ""}`,
+      ip_addr: req.ip || req.connection?.remoteAddress,
+    });
+
     res.json({
       message: "Login successful",
       accessToken,
@@ -51,6 +71,22 @@ export async function login(req: Request, res: Response) {
       needsOnboarding: !staff,
     });
   } catch (error) {
+    // Audit log failed login (local)
+    await logAction({
+      action: "FAILED_LOGIN",
+      entity: "AUTH",
+      newValue: { username: req.body.username, error: error instanceof Error ? error.message : "Invalid credentials" },
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    });
+
+    // Send to admin subsystem audit log
+    await sendAuditToAdminSubsystem({
+      user_id: "unknown",
+      action_type: "FAILED_LOGIN",
+      details: `Failed login attempt for username: ${req.body.username}`,
+      ip_addr: req.ip || req.connection?.remoteAddress,
+    });
+
     res.status(401).json({
       message: error instanceof Error ? error.message : "Invalid credentials",
     });
@@ -102,5 +138,24 @@ export async function me(req: Request, res: Response) {
 }
 
 export async function logout(req: Request, res: Response) {
+  // Audit log logout (local)
+  if (req.user) {
+    await logAction({
+      action: "LOGOUT",
+      entity: "AUTH",
+      entityId: req.user.userId,
+      performedBy: req.user.userId,
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    });
+
+    // Send to admin subsystem audit log
+    await sendAuditToAdminSubsystem({
+      user_id: req.user.userId,
+      action_type: "LOGOUT",
+      details: `User ${req.user.userId} logged out`,
+      ip_addr: req.ip || req.connection?.remoteAddress,
+    });
+  }
+
   res.json({ message: "Logged out successfully" });
 }
