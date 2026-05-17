@@ -4,6 +4,7 @@ import cors from "cors";
 import routes from "./routes/index.js";
 
 export const app = express();
+app.set("trust proxy", true);
 export const PORT = process.env.PORT || 8080;
 export default app;
 module.exports = app;
