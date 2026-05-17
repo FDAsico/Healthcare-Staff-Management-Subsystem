@@ -220,7 +220,7 @@ const Dashboard = () => {
                 {doctors.length === 0 ? (
                   <EmptyState message="No doctors available" />
                 ) : (
-                  doctors.map((doctor) => <DoctorRow key={doctor.id} doctor={doctor} />)
+                  doctors.map((doctor, idx) => <DoctorRow key={doctor.id || idx} doctor={doctor} />)
                 )}
               </div>
             </div>
@@ -272,7 +272,7 @@ const Dashboard = () => {
                   No departments available
                 </div>
               ) : (
-                departments.map((dept) => <DepartmentCard key={dept.id} department={dept} />)
+                departments.map((dept, idx) => <DepartmentCard key={dept.id || idx} department={dept} />)
               )}
             </div>
           </div>

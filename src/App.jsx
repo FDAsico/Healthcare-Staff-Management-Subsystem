@@ -10,6 +10,7 @@ import AdminMedicalRecords from "./pages/adminMedicalRecords";
 import AdminDepartments from "./pages/adminDepartments";
 import AdminStaff from "./pages/adminStaff";
 import AdminShift from "./pages/adminshift";
+import AdminAuditLog from "./pages/adminAuditLog";
 import Login from './pages/login'
 import Patients from './pages/Patients'
 import Dashboard from './pages/Dashboard'
@@ -278,7 +279,19 @@ function App() {
         }
       />
 
-      {/* Nurse Specific Routes */}
+      {/* Audit Log */}
+          <Route
+            path="/audit-logs"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={["ADMIN"]}>
+                  <AdminAuditLog />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+
+          {/* Nurse Specific Routes */}
       <Route
         path="/nurse-dashboard"
         element={

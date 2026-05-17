@@ -35,6 +35,7 @@ const menuItems = [
       { name: "Shift Management", path: "/staff/shifts" },
     ],
   },
+  { name: "Audit Logs", icon: FileText, path: "/audit-logs" },
 ];
 
 const Sidebar = () => {
