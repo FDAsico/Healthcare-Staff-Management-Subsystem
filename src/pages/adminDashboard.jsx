@@ -68,13 +68,6 @@ const Dashboard = () => {
         }),
       ]);
 
-      console.log("API Responses:", {
-        patients: patientsRes.data,
-        appointments: appointmentsRes.data,
-        staff: staffRes.data,
-        departments: departmentsRes.data,
-      });
-
       // Extract data based on specific API response structures
       // Appointments: response.data.data.appointments
       const appointmentsData = appointmentsRes.data?.data?.appointments || [];
@@ -87,13 +80,6 @@ const Dashboard = () => {
       
       // Departments: response.data.data (array directly)
       const departmentsData = departmentsRes.data?.data || [];
-
-      console.log("Extracted Data:", {
-        patients: patientsData,
-        appointments: appointmentsData,
-        staff: staffData,
-        departments: departmentsData,
-      });
 
       // Filter doctors from staff (role === "DOCTOR")
       const doctorsData = staffData.filter((s) => s.role === "DOCTOR" || s.position?.toLowerCase().includes("doctor"));

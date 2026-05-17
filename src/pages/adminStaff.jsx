@@ -270,8 +270,6 @@ function StaffManagement({ role = "admin" }) {
         middleName: staffForm.middleName?.trim() || undefined,
       };
 
-      console.log("Sending staff payload:", payload);
-
       const res = await fetch(`${API_BASE}/staff`, {
         method: "POST",
         headers: {
@@ -282,7 +280,6 @@ function StaffManagement({ role = "admin" }) {
       });
 
       const result = await res.json();
-      console.log("Create staff response:", res.status, result);
 
       if (!res.ok) {
         throw new Error(result.message || `Failed to create staff (${res.status})`);

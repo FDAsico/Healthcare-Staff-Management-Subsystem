@@ -44,8 +44,6 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      console.log("USER:", user);
-
       const [appointmentsRes, patientsRes] =
         await Promise.all([
           api.get("/patient-proxy/appointments").catch((err) => {
@@ -58,15 +56,9 @@ const Dashboard = () => {
           }),
         ]);
 
-      console.log("Appointments Response:", appointmentsRes.data);
-      console.log("Patients Response:", patientsRes.data);
-
       // Extract data based on API response structure
       const appointmentsData = appointmentsRes.data?.data?.appointments || [];
       const patientsData = patientsRes.data?.data?.records || [];
-
-      console.log("Appointments:", appointmentsData);
-      console.log("Patients:", patientsData);
 
       setAppointments(appointmentsData || []);
       setPatients(patientsData || []);

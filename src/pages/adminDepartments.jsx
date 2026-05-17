@@ -76,13 +76,6 @@ function Departments() {
     fetchDepartments();
   }, []);
 
-  useEffect(() => {
-    console.log("Available tokens:", {
-      token: localStorage.getItem("token"),
-      authToken: localStorage.getItem("authToken"),
-      accessToken: localStorage.getItem("accessToken"),
-    });
-  }, []);
 
   const fetchDepartments = async () => {
     setIsLoading(true);

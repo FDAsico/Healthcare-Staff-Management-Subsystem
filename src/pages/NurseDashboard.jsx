@@ -38,9 +38,6 @@ const NurseDashboard = () => {
         }),
       ]);
 
-      console.log("Nurse Dashboard - Appointments:", appointmentsRes.data);
-      console.log("Nurse Dashboard - Patients:", patientsRes.data);
-
       // Extract data based on API response structure
       const appointmentsData = appointmentsRes.data?.data?.appointments || [];
       const patientsData = patientsRes.data?.data?.records || [];
